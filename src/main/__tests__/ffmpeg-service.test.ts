@@ -1,4 +1,5 @@
 import { buildOutputPath } from '../ffmpeg-service';
+import { normalize } from 'path';
 import type { Preset } from '../../shared/types';
 
 describe('buildOutputPath', () => {
@@ -15,21 +16,21 @@ describe('buildOutputPath', () => {
 
   it('should build output path with custom directory', () => {
     const result = buildOutputPath('/home/user/input.mp4', '/home/user/output', preset);
-    expect(result).toBe('/home/user/output/input_h264.mp4');
+    expect(result).toBe(normalize('/home/user/output/input_h264.mp4'));
   });
 
   it('should use source directory when output dir is empty', () => {
     const result = buildOutputPath('/home/user/input.mp4', '', preset);
-    expect(result).toBe('/home/user/input_h264.mp4');
+    expect(result).toBe(normalize('/home/user/input_h264.mp4'));
   });
 
   it('should handle different file extensions', () => {
     const result = buildOutputPath('/path/to/video.mov', '/output', preset);
-    expect(result).toBe('/output/video_h264.mp4');
+    expect(result).toBe(normalize('/output/video_h264.mp4'));
   });
 
   it('should handle nested paths', () => {
     const result = buildOutputPath('/a/b/c/file.mkv', '/x/y/z', preset);
-    expect(result).toBe('/x/y/z/file_h264.mp4');
+    expect(result).toBe(normalize('/x/y/z/file_h264.mp4'));
   });
 });

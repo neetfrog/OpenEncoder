@@ -1,11 +1,14 @@
 # Production Deployment Guide
 
+**See [RELEASE.md](RELEASE.md) for the complete automated release workflow and quick-start guide.**
+
 ## Pre-Release Checklist
 
 ### 1. Version & Changelog
 - [ ] Update version in `package.json`
 - [ ] Update `CHANGELOG.md` with release notes
 - [ ] Ensure version matches semantic versioning (major.minor.patch)
+- [ ] See [RELEASE.md](RELEASE.md) for versioning strategy
 
 ### 2. Testing
 ```bash
@@ -45,39 +48,43 @@ npm run dist:linux
 
 ### 5. Code Signing (Optional)
 
+See [RELEASE.md — Code Signing & Notarization](RELEASE.md#code-signing--notarization) for detailed setup instructions.
+
 #### Windows Code Signing
 1. Obtain EV code signing certificate
-2. Configure in `.env`:
-   ```bash
-   WIN_CSC_LINK=path/to/cert.pfx
-   WIN_CSC_KEY_PASSWORD=certificate_password
-   ```
-3. Run `npm run dist:win`
+2. Configure GitHub Actions secrets:
+   - `WIN_CSC_LINK`: Base64-encoded certificate
+   - `WIN_CSC_KEY_PASSWORD`: Certificate password
 
 #### macOS Code Signing & Notarization
 1. Obtain Apple Developer certificate
-2. Configure in `.env`:
-   ```bash
-   APPLE_ID=your@email.com
-   APPLE_ID_PASSWORD=app_specific_password
-   APPLE_TEAM_ID=XXXXXXXXXX
-   ```
-3. Run `npm run dist:mac` (notarization happens automatically)
+2. Configure GitHub Actions secrets:
+   - `APPLE_ID`: Apple ID email
+   - `APPLE_ID_PASSWORD`: App-specific password
+   - `APPLE_TEAM_ID`: Team ID from developer account
 
-### 6. GitHub Release
+### 6. Automated Release via GitHub Actions
 
-1. Create a Git tag:
+**Complete guide: [RELEASE.md](RELEASE.md)**
+
+To trigger an automated release build:
+
+1. Update `package.json` version and `CHANGELOG.md`
+2. Create and push semantic version tag:
    ```bash
    git tag v0.2.0
    git push origin v0.2.0
    ```
 
-2. CI/CD will automatically:
-   - Build on all platforms
-   - Run tests
-   - Create GitHub release with binaries
+The workflow will automatically:
+   - Run all tests
+   - Build installers for Windows, macOS, and Linux
+   - Create GitHub release with all artifacts
+   - Generate release notes
 
 3. Verify release at: `https://github.com/user/mediaforge/releases`
+
+4. For detailed troubleshooting and advanced options, see [RELEASE.md](RELEASE.md)
 
 ## Post-Release
 

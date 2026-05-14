@@ -105,6 +105,7 @@ function encodeFile(jobId, inputPath, outputPath, preset, duration, callbacks) {
     cmd = cmd.outputOptions(preset.extraArgs);
   }
   cmd = cmd.format(preset.container);
+  const startTime = Date.now();
   cmd.on("progress", (progress) => {
     let percent = progress.percent ?? 0;
     if ((percent <= 0 || percent > 100) && progress.timemark && duration > 0) {
@@ -112,7 +113,8 @@ function encodeFile(jobId, inputPath, outputPath, preset, duration, callbacks) {
       const secs = parts[0] * 3600 + parts[1] * 60 + parts[2];
       percent = Math.min(100, secs / duration * 100);
     }
-    const remaining = duration > 0 && percent > 0 ? Math.round((100 - percent) / percent * (Date.now() / 1e3)) : 0;
+    const elapsed = (Date.now() - startTime) / 1e3;
+    const remaining = duration > 0 && percent > 0 && elapsed > 0 ? Math.round((100 - percent) / percent * elapsed) : 0;
     callbacks.onProgress({
       jobId,
       percent: Math.round(percent * 10) / 10,
@@ -134,19 +136,61 @@ function encodeFile(jobId, inputPath, outputPath, preset, duration, callbacks) {
     callbacks.onError({ jobId, error: err.message });
   });
   cmd.save(outputPath);
-  activeJobs.set(jobId, cmd);
+  activeJobs.set(jobId, { cmd, startTime });
 }
 function cancelJob(jobId) {
-  const cmd = activeJobs.get(jobId);
-  if (cmd) {
-    cmd.kill("SIGKILL");
+  const job = activeJobs.get(jobId);
+  if (job) {
+    job.cmd.kill("SIGKILL");
     activeJobs.delete(jobId);
   }
 }
 function cancelAllJobs() {
-  for (const [id, cmd] of activeJobs) {
-    cmd.kill("SIGKILL");
+  for (const [id, job] of activeJobs) {
+    job.cmd.kill("SIGKILL");
     activeJobs.delete(id);
+  }
+}
+function validateFilePath(filePath) {
+  if (!filePath || typeof filePath !== "string") return false;
+  if (filePath.includes("..")) return false;
+  try {
+    return fs.existsSync(filePath);
+  } catch {
+    return false;
+  }
+}
+function sanitizePathForLogging(filePath) {
+  return filePath.split(/[\\/]/).pop() || "unknown";
+}
+function withErrorHandling(handler, name) {
+  return async (...args) => {
+    try {
+      return await handler(...args);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`IPC Error in ${name}:`, message);
+      throw err;
+    }
+  };
+}
+function validateFilePathForEncoding(filePath) {
+  if (!validateFilePath(filePath)) {
+    throw new Error(`Invalid file path: ${sanitizePathForLogging(filePath)}`);
+  }
+}
+function validateEncodePayload(payload) {
+  if (!Array.isArray(payload.jobs) || payload.jobs.length === 0) {
+    throw new Error("Invalid encode payload: empty jobs array");
+  }
+  for (const job of payload.jobs) {
+    if (!job.id || typeof job.id !== "string") {
+      throw new Error("Invalid job: missing or invalid id");
+    }
+    if (!job.inputPath || typeof job.inputPath !== "string") {
+      throw new Error(`Invalid job ${job.id}: missing or invalid inputPath`);
+    }
+    validateFilePathForEncoding(job.inputPath);
   }
 }
 const IPC = {
@@ -198,34 +242,38 @@ function drainQueue(win) {
   }
 }
 function registerIpcHandlers() {
-  electron.ipcMain.handle(IPC.PROBE, async (_event, filePath) => {
-    try {
+  electron.ipcMain.handle(
+    IPC.PROBE,
+    withErrorHandling(async (_event, filePath) => {
+      validateFilePathForEncoding(filePath);
       return await probeFile(filePath);
-    } catch (err) {
-      throw new Error(err.message);
-    }
-  });
-  electron.ipcMain.handle(IPC.ENCODE_START, async (event, payload) => {
-    const win = electron.BrowserWindow.fromWebContents(event.sender);
-    if (!win) return;
-    for (const job of payload.jobs) {
-      let duration = 0;
-      try {
-        const info = await probeFile(job.inputPath);
-        duration = info.duration;
-      } catch {
+    }, "PROBE")
+  );
+  electron.ipcMain.handle(
+    IPC.ENCODE_START,
+    withErrorHandling(async (event, payload) => {
+      validateEncodePayload(payload);
+      const win = electron.BrowserWindow.fromWebContents(event.sender);
+      if (!win) return;
+      for (const job of payload.jobs) {
+        let duration = 0;
+        try {
+          const info = await probeFile(job.inputPath);
+          duration = info.duration;
+        } catch {
+        }
+        pendingQueue.push({
+          id: job.id,
+          inputPath: job.inputPath,
+          outputDir: job.outputDir,
+          presetId: job.preset.id,
+          preset: job.preset,
+          duration
+        });
       }
-      pendingQueue.push({
-        id: job.id,
-        inputPath: job.inputPath,
-        outputDir: job.outputDir,
-        presetId: job.preset.id,
-        preset: job.preset,
-        duration
-      });
-    }
-    drainQueue(win);
-  });
+      drainQueue(win);
+    }, "ENCODE_START")
+  );
   electron.ipcMain.handle(IPC.ENCODE_CANCEL, async (_event, jobId) => {
     cancelJob(jobId);
     const idx = pendingQueue.findIndex((j) => j.id === jobId);
@@ -288,6 +336,20 @@ function registerIpcHandlers() {
   electron.ipcMain.handle(IPC.STORE_SET, (_event, key, value) => store.set(key, value));
   electron.ipcMain.handle(IPC.APP_VERSION, () => electron.app.getVersion());
 }
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+  if (process.env.NODE_ENV === "development") {
+    console.error(error.stack);
+  }
+});
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+function setupErrorHandling() {
+  electron.app.on("renderer-process-crashed", (event, webContents, killed) => {
+    console.error(`Renderer process crashed. Killed: ${killed}`);
+  });
+}
 exports.mainWindow = null;
 function createWindow() {
   exports.mainWindow = new electron.BrowserWindow({
@@ -301,9 +363,11 @@ function createWindow() {
     backgroundColor: "#0d1117",
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
-      sandbox: false,
+      sandbox: true,
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      enableRemoteModule: false,
+      allowRunningInsecureContent: false
     }
   });
   exports.mainWindow.on("ready-to-show", () => {
@@ -333,6 +397,7 @@ function createWindow() {
 }
 electron.app.whenReady().then(() => {
   utils.electronApp.setAppUserModelId("com.mediaforge.app");
+  setupErrorHandling();
   electron.app.on("browser-window-created", (_, window) => {
     utils.optimizer.watchWindowShortcuts(window);
   });

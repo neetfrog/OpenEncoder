@@ -25,10 +25,13 @@ A full-featured local video/audio transcoder with a modern dark UI. No subscript
 
 ### Installation
 
-Download the latest release for your platform:
-- **Windows**: MediaForge-setup-*.exe
-- **macOS**: MediaForge-*.dmg (Universal binary)
-- **Linux**: MediaForge-*.AppImage
+Download the latest release for your platform from [GitHub Releases](https://github.com/user/mediaforge/releases):
+
+- **Windows**:
+  - `MediaForge-setup-*.exe` — Installer (recommended for most users)
+  - `MediaForge-*.exe` — Portable executable (no installation required)
+- **macOS**: `MediaForge-*.dmg` — DMG installer (Universal binary: Intel + Apple Silicon)
+- **Linux**: `MediaForge-*.AppImage` — AppImage (self-contained, no dependencies)
 
 ### Usage
 
@@ -79,7 +82,8 @@ npm run test:cov   # Coverage report
 
 ### Documentation
 - **[Contributing Guide](CONTRIBUTING.md)** — Development workflow, testing, code standards
-- **[Deployment Guide](DEPLOYMENT.md)** — Release checklist, signing, publishing
+- **[Release Guide](RELEASE.md)** — Automated releases, building installers, GitHub Actions
+- **[Deployment Guide](DEPLOYMENT.md)** — Pre-release checklist, signing, publishing
 - **[Security Policy](SECURITY.md)** — Security considerations and best practices
 - **[Changelog](CHANGELOG.md)** — Version history and updates
 

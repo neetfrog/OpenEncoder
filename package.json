@@ -81,8 +81,19 @@
       }
     ],
     "win": {
-      "target": "nsis",
-      "icon": "resources/icon.ico"
+      "target": ["nsis", "portable"],
+      "icon": "resources/icon.ico",
+      "certificateFile": null,
+      "certificatePassword": null,
+      "signingHashAlgorithms": ["sha256"],
+      "sign": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MediaForge"
     },
     "mac": {
       "target": "dmg",

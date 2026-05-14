@@ -7,6 +7,7 @@ import {
   cancelJob,
   cancelAllJobs
 } from './ffmpeg-service'
+import { validateFilePathForEncoding, validateEncodePayload, withErrorHandling } from './ipc-security'
 import type { AppSettings, EncodeStartPayload } from '../shared/types'
 import { IPC } from '../shared/types'
 
@@ -67,40 +68,44 @@ function drainQueue(win: BrowserWindow): void {
 
 export function registerIpcHandlers(): void {
   // Probe a media file
-  ipcMain.handle(IPC.PROBE, async (_event, filePath: string) => {
-    try {
+  ipcMain.handle(
+    IPC.PROBE,
+    withErrorHandling(async (_event, filePath: string) => {
+      validateFilePathForEncoding(filePath)
       return await probeFile(filePath)
-    } catch (err) {
-      throw new Error((err as Error).message)
-    }
-  })
+    }, 'PROBE')
+  )
 
   // Start encoding jobs
-  ipcMain.handle(IPC.ENCODE_START, async (event, payload: EncodeStartPayload) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    if (!win) return
+  ipcMain.handle(
+    IPC.ENCODE_START,
+    withErrorHandling(async (event, payload: EncodeStartPayload) => {
+      validateEncodePayload(payload)
+      const win = BrowserWindow.fromWebContents(event.sender)
+      if (!win) return
 
-    for (const job of payload.jobs) {
-      let duration = 0
-      try {
-        const info = await probeFile(job.inputPath)
-        duration = info.duration
-      } catch {
-        // proceed with 0 duration (progress will fall back to timemark)
+      for (const job of payload.jobs) {
+        let duration = 0
+        try {
+          const info = await probeFile(job.inputPath)
+          duration = info.duration
+        } catch {
+          // proceed with 0 duration (progress will fall back to timemark)
+        }
+
+        pendingQueue.push({
+          id: job.id,
+          inputPath: job.inputPath,
+          outputDir: job.outputDir,
+          presetId: job.preset.id,
+          preset: job.preset,
+          duration
+        })
       }
 
-      pendingQueue.push({
-        id: job.id,
-        inputPath: job.inputPath,
-        outputDir: job.outputDir,
-        presetId: job.preset.id,
-        preset: job.preset,
-        duration
-      })
-    }
-
-    drainQueue(win)
-  })
+      drainQueue(win)
+    }, 'ENCODE_START')
+  )
 
   // Cancel a single job
   ipcMain.handle(IPC.ENCODE_CANCEL, async (_event, jobId: string) => {

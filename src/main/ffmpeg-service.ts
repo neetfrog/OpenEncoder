@@ -44,7 +44,12 @@ ffmpeg.setFfprobePath(resolveFfprobePath())
 
 // ─── Active jobs map ──────────────────────────────────────────────────────────
 
-const activeJobs = new Map<string, ffmpeg.FfmpegCommand>()
+interface ActiveJob {
+  cmd: ffmpeg.FfmpegCommand
+  startTime: number
+}
+
+const activeJobs = new Map<string, ActiveJob>()
 
 // ─── Probe ────────────────────────────────────────────────────────────────────
 
@@ -161,6 +166,7 @@ export function encodeFile(
   cmd = cmd.format(preset.container)
 
   // ── Progress ────────────────────────────────────────────────────────────────
+  const startTime = Date.now()
   cmd.on('progress', (progress) => {
     // Calculate percent from timemark when percent is unreliable
     let percent = progress.percent ?? 0
@@ -170,9 +176,11 @@ export function encodeFile(
       percent = Math.min(100, (secs / duration) * 100)
     }
 
+    // Calculate remaining time based on elapsed time and progress rate
+    const elapsed = (Date.now() - startTime) / 1000 // seconds
     const remaining =
-      duration > 0 && percent > 0
-        ? Math.round(((100 - percent) / percent) * (Date.now() / 1000))
+      duration > 0 && percent > 0 && elapsed > 0
+        ? Math.round(((100 - percent) / percent) * elapsed)
         : 0
 
     callbacks.onProgress({
@@ -200,22 +208,22 @@ export function encodeFile(
   })
 
   cmd.save(outputPath)
-  activeJobs.set(jobId, cmd)
+  activeJobs.set(jobId, { cmd, startTime })
 }
 
 // ─── Cancel ───────────────────────────────────────────────────────────────────
 
 export function cancelJob(jobId: string): void {
-  const cmd = activeJobs.get(jobId)
-  if (cmd) {
-    cmd.kill('SIGKILL')
+  const job = activeJobs.get(jobId)
+  if (job) {
+    job.cmd.kill('SIGKILL')
     activeJobs.delete(jobId)
   }
 }
 
 export function cancelAllJobs(): void {
-  for (const [id, cmd] of activeJobs) {
-    cmd.kill('SIGKILL')
+  for (const [id, job] of activeJobs) {
+    job.cmd.kill('SIGKILL')
     activeJobs.delete(id)
   }
 }

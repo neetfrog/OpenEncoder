@@ -40,7 +40,7 @@ export function useFFmpegEvents(): void {
 }
 
 export function useProbeFiles(fileIds: string[]): void {
-  const { jobs, setJobMediaInfo } = useEncoderStore()
+  const { jobs, setJobMediaInfo, setJobStatus } = useEncoderStore()
 
   useEffect(() => {
     for (const id of fileIds) {
@@ -49,8 +49,13 @@ export function useProbeFiles(fileIds: string[]): void {
         window.api
           .probe(job.inputPath)
           .then((info) => setJobMediaInfo(id, info))
-          .catch(() => {
-            // silently ignore probe failures
+          .catch((err) => {
+            // Set error status instead of silently ignoring
+            const errorMsg = err instanceof Error ? err.message : 'Failed to probe media file'
+            setJobStatus(id, 'error', {
+              error: `Probe error: ${errorMsg}`,
+              progress: 0
+            })
           })
       }
     }

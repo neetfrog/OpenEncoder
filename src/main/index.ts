@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc-handlers'
+import { setupErrorHandling } from './error-handler'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -17,9 +18,11 @@ function createWindow(): void {
     backgroundColor: '#0d1117',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      sandbox: true,
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      enableRemoteModule: false,
+      allowRunningInsecureContent: false
     }
   })
 
@@ -56,6 +59,7 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.mediaforge.app')
+  setupErrorHandling()
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

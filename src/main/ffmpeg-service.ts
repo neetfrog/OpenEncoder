@@ -13,55 +13,52 @@ import type {
 
 // ─── Configure FFmpeg paths ────────────────────────────────────────────────────
 
+function resolveBinaryPath(candidates: string[]): string {
+  for (const candidate of candidates) {
+    if (candidate && existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return candidates[candidates.length - 1] ?? '';
+}
+
 function resolveFfmpegPath(): string {
-  // In packaged app, ffmpeg-static is placed in extraResources
-  const resourcesPath = process.resourcesPath;
+  const executable = typeof ffmpegPath === 'string' ? ffmpegPath : '';
   const candidates: string[] = [];
 
-  if (resourcesPath) {
+  if (process.resourcesPath) {
     candidates.push(
       join(
-        resourcesPath,
+        process.resourcesPath,
         'ffmpeg-static',
         process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
       )
     );
   }
 
-  if (ffmpegPath) {
-    candidates.push(ffmpegPath as string);
-  }
-
-  for (const p of candidates) {
-    if (p && existsSync(p)) return p;
-  }
-  return ffmpegPath as string;
+  candidates.push(executable);
+  return resolveBinaryPath(candidates);
 }
 
 function resolveFfprobePath(): string {
-  const resourcesPath = process.resourcesPath;
-  const bin = process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe';
+  const executable = typeof ffprobePath === 'string' ? ffprobePath : (ffprobePath?.path ?? '');
   const candidates: string[] = [];
 
-  if (resourcesPath) {
+  if (process.resourcesPath) {
     candidates.push(
       join(
-        resourcesPath,
+        process.resourcesPath,
         'ffprobe-static',
         'bin',
         process.platform,
         process.arch,
-        bin
+        process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe'
       )
     );
   }
 
-  candidates.push(ffprobePath.path);
-  
-  for (const p of candidates) {
-    if (p && existsSync(p)) return p;
-  }
-  return ffprobePath.path;
+  candidates.push(executable);
+  return resolveBinaryPath(candidates);
 }
 
 ffmpeg.setFfmpegPath(resolveFfmpegPath());

@@ -17,15 +17,21 @@ function resolveFfmpegPath(): string {
   // In packaged app, ffmpeg-static is placed in extraResources
   const resourcesPath = process.resourcesPath;
   const candidates: string[] = [];
-  
+
   if (resourcesPath) {
-    candidates.push(join(resourcesPath, 'ffmpeg-static', process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'));
+    candidates.push(
+      join(
+        resourcesPath,
+        'ffmpeg-static',
+        process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
+      )
+    );
   }
-  
+
   if (ffmpegPath) {
     candidates.push(ffmpegPath as string);
   }
-  
+
   for (const p of candidates) {
     if (p && existsSync(p)) return p;
   }
@@ -36,11 +42,20 @@ function resolveFfprobePath(): string {
   const resourcesPath = process.resourcesPath;
   const bin = process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe';
   const candidates: string[] = [];
-  
+
   if (resourcesPath) {
-    candidates.push(join(resourcesPath, 'ffprobe-static', 'bin', process.platform, process.arch, bin));
+    candidates.push(
+      join(
+        resourcesPath,
+        'ffprobe-static',
+        'bin',
+        process.platform,
+        process.arch,
+        bin
+      )
+    );
   }
-  
+
   candidates.push(ffprobePath.path);
   
   for (const p of candidates) {

@@ -1,5 +1,6 @@
 {
   "include": ["src/renderer/src/**/*", "src/shared/**/*"],
+  "exclude": ["out", "dist-electron", "node_modules"],
   "compilerOptions": {
     "composite": true,
     "module": "ESNext",

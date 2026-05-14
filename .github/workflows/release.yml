@@ -100,8 +100,6 @@ jobs:
           tag_name: ${{ steps.version.outputs.version }}
           files: |
             artifacts/windows/**/*.exe
-            artifacts/macos/**/*.dmg
-            artifacts/linux/**/*.AppImage
           generate_release_notes: true
           draft: false
           prerelease: false

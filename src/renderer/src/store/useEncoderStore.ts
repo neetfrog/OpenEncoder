@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { BUILT_IN_PRESETS } from '@shared/presets';
-import type { EncodeJob, Preset, MediaInfo, AppSettings } from '@shared/types';
+import type { EncodeJob, Preset, MediaInfo } from '@shared/types';
 import { v4 as uuid } from '../utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

@@ -10,7 +10,6 @@ export default function QueuePanel(): JSX.Element {
     jobs,
     addFiles,
     clearDoneJobs,
-    clearAllJobs,
     activePreset,
     setActivePreset,
     isEncoding,
@@ -18,8 +17,6 @@ export default function QueuePanel(): JSX.Element {
     setOutputDir,
     outputDir,
   } = useEncoderStore();
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddFiles = useCallback(async () => {
     const paths = await window.api.openFiles();

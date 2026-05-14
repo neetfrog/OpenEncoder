@@ -9,7 +9,6 @@ const NAV = [
 
 export default function Sidebar(): JSX.Element {
   const { activeTab, setActiveTab, jobs } = useEncoderStore();
-  const pendingCount = jobs.filter((j) => j.status === 'pending').length;
   const totalCount = jobs.length;
 
   return (

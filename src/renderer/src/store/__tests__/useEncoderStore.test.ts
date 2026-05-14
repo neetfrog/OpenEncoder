@@ -1,5 +1,4 @@
 import { useEncoderStore } from '../useEncoderStore';
-import type { Preset } from '../../shared/types';
 
 describe('useEncoderStore', () => {
   beforeEach(() => {

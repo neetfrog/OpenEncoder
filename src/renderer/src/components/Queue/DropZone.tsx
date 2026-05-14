@@ -1,21 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
-import { Upload, Film, Music, Image } from 'lucide-react';
+import { Upload, Film, Music } from 'lucide-react';
 
 interface Props {
   onFiles: (paths: string[]) => void;
 }
-
-const SUPPORTED = [
-  'video/mp4',
-  'video/quicktime',
-  'video/x-matroska',
-  'video/webm',
-  'video/x-msvideo',
-  'audio/mpeg',
-  'audio/flac',
-  'audio/wav',
-  'audio/ogg',
-];
 
 export default function DropZone({ onFiles }: Props): JSX.Element {
   const [isDragOver, setIsDragOver] = useState(false);

@@ -1,4 +1,3 @@
-import { ipcMain } from 'electron';
 import { validateFilePath, validateDirPath, sanitizePathForLogging } from './ipc-validation';
 import type { EncodeStartPayload } from '../shared/types';
 

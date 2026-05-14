@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Video, Music, Image, Plus, Star, Check } from 'lucide-react';
+import { Search, Video, Music, Image, Star, Check } from 'lucide-react';
 import { BUILT_IN_PRESETS } from '@shared/presets';
 import type { Preset, PresetCategory } from '@shared/types';
 import { useEncoderStore } from '@renderer/store/useEncoderStore';

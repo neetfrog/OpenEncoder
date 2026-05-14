@@ -1,5 +1,4 @@
 import { useEncoderStore } from '@renderer/store/useEncoderStore';
-import { formatEta } from '@renderer/utils';
 
 export default function EncodeBar(): JSX.Element {
   const { jobs } = useEncoderStore();

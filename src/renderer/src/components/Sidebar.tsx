@@ -1,16 +1,16 @@
-import { List, Layers, Settings } from 'lucide-react'
-import { useEncoderStore } from '@renderer/store/useEncoderStore'
+import { List, Layers, Settings } from 'lucide-react';
+import { useEncoderStore } from '@renderer/store/useEncoderStore';
 
 const NAV = [
   { id: 'queue' as const, icon: List, label: 'Queue' },
   { id: 'presets' as const, icon: Layers, label: 'Presets' },
-  { id: 'settings' as const, icon: Settings, label: 'Settings' }
-]
+  { id: 'settings' as const, icon: Settings, label: 'Settings' },
+];
 
 export default function Sidebar(): JSX.Element {
-  const { activeTab, setActiveTab, jobs } = useEncoderStore()
-  const pendingCount = jobs.filter((j) => j.status === 'pending').length
-  const totalCount = jobs.length
+  const { activeTab, setActiveTab, jobs } = useEncoderStore();
+  const pendingCount = jobs.filter((j) => j.status === 'pending').length;
+  const totalCount = jobs.length;
 
   return (
     <nav className="flex flex-col w-16 bg-[#161b22] border-r border-[#21262d] shrink-0 py-2">
@@ -19,9 +19,10 @@ export default function Sidebar(): JSX.Element {
           key={id}
           onClick={() => setActiveTab(id)}
           className={`relative flex flex-col items-center gap-1 py-3 mx-1 rounded-lg transition-all duration-150 group
-            ${activeTab === id
-              ? 'bg-indigo-500/20 text-indigo-400'
-              : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-white/5'
+            ${
+              activeTab === id
+                ? 'bg-indigo-500/20 text-indigo-400'
+                : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-white/5'
             }`}
           title={label}
         >
@@ -35,5 +36,5 @@ export default function Sidebar(): JSX.Element {
         </button>
       ))}
     </nav>
-  )
+  );
 }

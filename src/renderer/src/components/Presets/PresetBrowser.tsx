@@ -1,35 +1,40 @@
-import { useState } from 'react'
-import { Search, Video, Music, Image, Plus, Star, Check } from 'lucide-react'
-import { BUILT_IN_PRESETS } from '@shared/presets'
-import type { Preset, PresetCategory } from '@shared/types'
-import { useEncoderStore } from '@renderer/store/useEncoderStore'
+import { useState } from 'react';
+import { Search, Video, Music, Image, Plus, Star, Check } from 'lucide-react';
+import { BUILT_IN_PRESETS } from '@shared/presets';
+import type { Preset, PresetCategory } from '@shared/types';
+import { useEncoderStore } from '@renderer/store/useEncoderStore';
 
 const CATEGORY_ICONS = {
   video: Video,
   audio: Music,
-  image: Image
-}
+  image: Image,
+};
 
 const CATEGORY_COLORS: Record<string, string> = {
   video: 'text-blue-400',
   audio: 'text-orange-400',
-  image: 'text-green-400'
-}
+  image: 'text-green-400',
+};
 
-function PresetCard({ preset, isActive, onSelect }: {
-  preset: Preset
-  isActive: boolean
-  onSelect: () => void
+function PresetCard({
+  preset,
+  isActive,
+  onSelect,
+}: {
+  preset: Preset;
+  isActive: boolean;
+  onSelect: () => void;
 }): JSX.Element {
-  const Icon = CATEGORY_ICONS[preset.category] ?? Video
+  const Icon = CATEGORY_ICONS[preset.category] ?? Video;
 
   return (
     <div
       onClick={onSelect}
       className={`relative p-4 rounded-xl border cursor-pointer transition-all duration-150 group
-        ${isActive
-          ? 'border-indigo-500 bg-indigo-500/10'
-          : 'border-[#21262d] bg-[#161b22] hover:border-[#30363d] hover:bg-[#1c2128]'
+        ${
+          isActive
+            ? 'border-indigo-500 bg-indigo-500/10'
+            : 'border-[#21262d] bg-[#161b22] hover:border-[#30363d] hover:bg-[#1c2128]'
         }`}
     >
       {isActive && (
@@ -72,20 +77,24 @@ function PresetCard({ preset, isActive, onSelect }: {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 export default function PresetBrowser(): JSX.Element {
-  const { activePreset, setActivePreset } = useEncoderStore()
-  const [search, setSearch] = useState('')
-  const [category, setCategory] = useState<PresetCategory | 'all'>('all')
+  const { activePreset, setActivePreset } = useEncoderStore();
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState<PresetCategory | 'all'>('all');
 
   const filtered = BUILT_IN_PRESETS.filter((p) => {
-    if (category !== 'all' && p.category !== category) return false
-    if (search && !p.name.toLowerCase().includes(search.toLowerCase()) &&
-        !p.description.toLowerCase().includes(search.toLowerCase())) return false
-    return true
-  })
+    if (category !== 'all' && p.category !== category) return false;
+    if (
+      search &&
+      !p.name.toLowerCase().includes(search.toLowerCase()) &&
+      !p.description.toLowerCase().includes(search.toLowerCase())
+    )
+      return false;
+    return true;
+  });
 
   return (
     <div className="flex flex-col h-full">
@@ -112,9 +121,10 @@ export default function PresetBrowser(): JSX.Element {
                 key={cat}
                 onClick={() => setCategory(cat)}
                 className={`px-3 py-1 rounded-md text-xs font-medium capitalize transition-colors
-                  ${category === cat
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-[#8b949e] hover:text-[#e6edf3]'
+                  ${
+                    category === cat
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-[#8b949e] hover:text-[#e6edf3]'
                   }`}
               >
                 {cat === 'all' ? 'All' : cat}
@@ -160,5 +170,5 @@ export default function PresetBrowser(): JSX.Element {
         )}
       </div>
     </div>
-  )
+  );
 }

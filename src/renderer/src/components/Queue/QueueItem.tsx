@@ -1,19 +1,19 @@
-import { memo, useCallback, useEffect } from 'react'
-import { X, AlertCircle, CheckCircle2, Clock, Loader2, ChevronDown } from 'lucide-react'
-import type { EncodeJob } from '@shared/types'
-import { useEncoderStore } from '@renderer/store/useEncoderStore'
-import { formatBytes, formatDuration, formatEta, basename, getExtension } from '@renderer/utils'
-import { BUILT_IN_PRESETS } from '@shared/presets'
+import { memo, useCallback, useEffect } from 'react';
+import { X, AlertCircle, CheckCircle2, Clock, Loader2, ChevronDown } from 'lucide-react';
+import type { EncodeJob } from '@shared/types';
+import { useEncoderStore } from '@renderer/store/useEncoderStore';
+import { formatBytes, formatDuration, formatEta, basename, getExtension } from '@renderer/utils';
+import { BUILT_IN_PRESETS } from '@shared/presets';
 
 interface Props {
-  job: EncodeJob
+  job: EncodeJob;
 }
 
 function QueueItem({ job }: Props): JSX.Element {
-  const { removeJob, setJobPreset, selectedJobIds, selectJob, setJobMediaInfo } = useEncoderStore()
-  const isSelected = selectedJobIds.has(job.id)
-  const fileName = basename(job.inputPath)
-  const ext = getExtension(job.inputPath)
+  const { removeJob, setJobPreset, selectedJobIds, selectJob, setJobMediaInfo } = useEncoderStore();
+  const isSelected = selectedJobIds.has(job.id);
+  const fileName = basename(job.inputPath);
+  const ext = getExtension(job.inputPath);
 
   // Probe on mount
   useEffect(() => {
@@ -21,26 +21,26 @@ function QueueItem({ job }: Props): JSX.Element {
       window.api
         .probe(job.inputPath)
         .then((info) => setJobMediaInfo(job.id, info))
-        .catch(() => {})
+        .catch(() => {});
     }
-  }, [job.id, job.inputPath])
+  }, [job.id, job.inputPath]);
 
   const handleRemove = useCallback(
     (e: React.MouseEvent) => {
-      e.stopPropagation()
-      removeJob(job.id)
+      e.stopPropagation();
+      removeJob(job.id);
     },
     [job.id, removeJob]
-  )
+  );
 
   const handleCancelJob = useCallback(
     async (e: React.MouseEvent) => {
-      e.stopPropagation()
-      await window.api.encodeCancel(job.id)
-      useEncoderStore.getState().setJobStatus(job.id, 'cancelled')
+      e.stopPropagation();
+      await window.api.encodeCancel(job.id);
+      useEncoderStore.getState().setJobStatus(job.id, 'cancelled');
     },
     [job.id]
-  )
+  );
 
   return (
     <div
@@ -53,13 +53,21 @@ function QueueItem({ job }: Props): JSX.Element {
     >
       {/* Extension badge */}
       <div className="w-8 shrink-0 flex justify-center">
-        <span className={`text-[9px] font-bold px-1 py-0.5 rounded uppercase tracking-wider
-          ${ext === 'MP4' || ext === 'MOV' ? 'bg-blue-500/20 text-blue-400' :
-            ext === 'MKV' ? 'bg-purple-500/20 text-purple-400' :
-            ext === 'WEBM' ? 'bg-teal-500/20 text-teal-400' :
-            ['MP3', 'AAC', 'FLAC', 'WAV', 'OGG'].includes(ext) ? 'bg-orange-500/20 text-orange-400' :
-            'bg-[#21262d] text-[#8b949e]'}
-        `}>
+        <span
+          className={`text-[9px] font-bold px-1 py-0.5 rounded uppercase tracking-wider
+          ${
+            ext === 'MP4' || ext === 'MOV'
+              ? 'bg-blue-500/20 text-blue-400'
+              : ext === 'MKV'
+                ? 'bg-purple-500/20 text-purple-400'
+                : ext === 'WEBM'
+                  ? 'bg-teal-500/20 text-teal-400'
+                  : ['MP3', 'AAC', 'FLAC', 'WAV', 'OGG'].includes(ext)
+                    ? 'bg-orange-500/20 text-orange-400'
+                    : 'bg-[#21262d] text-[#8b949e]'
+          }
+        `}
+        >
           {ext || '?'}
         </span>
       </div>
@@ -79,9 +87,13 @@ function QueueItem({ job }: Props): JSX.Element {
         {job.mediaInfo ? (
           <div className="text-[10px] text-[#8b949e] space-y-0.5">
             {job.mediaInfo.width && job.mediaInfo.height && (
-              <div className="text-[#6e7681]">{job.mediaInfo.width}×{job.mediaInfo.height}</div>
+              <div className="text-[#6e7681]">
+                {job.mediaInfo.width}×{job.mediaInfo.height}
+              </div>
             )}
-            <div>{formatDuration(job.mediaInfo.duration)} · {formatBytes(job.mediaInfo.size)}</div>
+            <div>
+              {formatDuration(job.mediaInfo.duration)} · {formatBytes(job.mediaInfo.size)}
+            </div>
           </div>
         ) : (
           <div className="text-[10px] text-[#484f58] animate-pulse">probing…</div>
@@ -95,8 +107,8 @@ function QueueItem({ job }: Props): JSX.Element {
             <select
               value={job.preset.id}
               onChange={(e) => {
-                const p = BUILT_IN_PRESETS.find((pr) => pr.id === e.target.value)
-                if (p) setJobPreset(job.id, p)
+                const p = BUILT_IN_PRESETS.find((pr) => pr.id === e.target.value);
+                if (p) setJobPreset(job.id, p);
               }}
               onClick={(e) => e.stopPropagation()}
               className="w-full bg-transparent text-[11px] text-[#e6edf3] px-2 py-1 outline-none cursor-pointer appearance-none pr-6"
@@ -107,7 +119,10 @@ function QueueItem({ job }: Props): JSX.Element {
                 </option>
               ))}
             </select>
-            <ChevronDown size={10} className="absolute right-1.5 text-[#484f58] pointer-events-none" />
+            <ChevronDown
+              size={10}
+              className="absolute right-1.5 text-[#484f58] pointer-events-none"
+            />
           </div>
         ) : (
           <div className="text-[11px] text-[#6e7681] truncate px-1">{job.preset.name}</div>
@@ -136,20 +151,14 @@ function QueueItem({ job }: Props): JSX.Element {
             )}
           </div>
         )}
-        {job.status === 'done' && (
-          <div className="text-[10px] text-green-400">✓ Done</div>
-        )}
+        {job.status === 'done' && <div className="text-[10px] text-green-400">✓ Done</div>}
         {job.status === 'error' && (
           <div className="text-[10px] text-red-400 truncate" title={job.error}>
             ✕ {job.error}
           </div>
         )}
-        {job.status === 'cancelled' && (
-          <div className="text-[10px] text-[#8b949e]">Cancelled</div>
-        )}
-        {job.status === 'pending' && (
-          <div className="text-[10px] text-[#484f58]">Waiting</div>
-        )}
+        {job.status === 'cancelled' && <div className="text-[10px] text-[#8b949e]">Cancelled</div>}
+        {job.status === 'pending' && <div className="text-[10px] text-[#484f58]">Waiting</div>}
       </div>
 
       {/* Status icon */}
@@ -184,7 +193,7 @@ function QueueItem({ job }: Props): JSX.Element {
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default memo(QueueItem)
+export default memo(QueueItem);

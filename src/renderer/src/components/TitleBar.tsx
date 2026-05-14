@@ -1,17 +1,17 @@
-import { useState, useEffect } from 'react'
-import { Minus, Square, X, Cpu } from 'lucide-react'
-import { useEncoderStore } from '@renderer/store/useEncoderStore'
+import { useState, useEffect } from 'react';
+import { Minus, Square, X, Cpu } from 'lucide-react';
+import { useEncoderStore } from '@renderer/store/useEncoderStore';
 
 export default function TitleBar(): JSX.Element {
-  const [isMaximized, setIsMaximized] = useState(false)
-  const { jobs, isEncoding } = useEncoderStore()
-  const encodingCount = jobs.filter((j) => j.status === 'encoding').length
+  const [isMaximized, setIsMaximized] = useState(false);
+  const { jobs, isEncoding } = useEncoderStore();
+  const encodingCount = jobs.filter((j) => j.status === 'encoding').length;
 
   useEffect(() => {
-    window.api.windowIsMaximized().then(setIsMaximized)
-    const remove = window.api.onWindowMaximized(setIsMaximized)
-    return remove
-  }, [])
+    window.api.windowIsMaximized().then(setIsMaximized);
+    const remove = window.api.onWindowMaximized(setIsMaximized);
+    return remove;
+  }, []);
 
   return (
     <div className="drag-region flex items-center h-10 bg-[#161b22] border-b border-[#21262d] shrink-0 select-none">
@@ -63,5 +63,5 @@ export default function TitleBar(): JSX.Element {
         </button>
       </div>
     </div>
-  )
+  );
 }

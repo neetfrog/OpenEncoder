@@ -1,9 +1,9 @@
-import { useCallback, useRef } from 'react'
-import { Plus, FolderOpen, Trash2, Play, Square, ChevronDown } from 'lucide-react'
-import { useEncoderStore } from '@renderer/store/useEncoderStore'
-import QueueItem from './QueueItem'
-import DropZone from './DropZone'
-import { BUILT_IN_PRESETS } from '@shared/presets'
+import { useCallback, useRef } from 'react';
+import { Plus, FolderOpen, Trash2, Play, Square, ChevronDown } from 'lucide-react';
+import { useEncoderStore } from '@renderer/store/useEncoderStore';
+import QueueItem from './QueueItem';
+import DropZone from './DropZone';
+import { BUILT_IN_PRESETS } from '@shared/presets';
 
 export default function QueuePanel(): JSX.Element {
   const {
@@ -16,51 +16,51 @@ export default function QueuePanel(): JSX.Element {
     isEncoding,
     setIsEncoding,
     setOutputDir,
-    outputDir
-  } = useEncoderStore()
+    outputDir,
+  } = useEncoderStore();
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddFiles = useCallback(async () => {
-    const paths = await window.api.openFiles()
-    if (paths.length > 0) addFiles(paths)
-  }, [addFiles])
+    const paths = await window.api.openFiles();
+    if (paths.length > 0) addFiles(paths);
+  }, [addFiles]);
 
   const handleChooseOutputDir = useCallback(async () => {
-    const dir = await window.api.openFolder()
-    if (dir) setOutputDir(dir)
-  }, [setOutputDir])
+    const dir = await window.api.openFolder();
+    if (dir) setOutputDir(dir);
+  }, [setOutputDir]);
 
   const handleStartEncoding = useCallback(async () => {
-    const pending = jobs.filter((j) => j.status === 'pending')
-    if (pending.length === 0) return
-    setIsEncoding(true)
+    const pending = jobs.filter((j) => j.status === 'pending');
+    if (pending.length === 0) return;
+    setIsEncoding(true);
 
     await window.api.encodeStart({
       jobs: pending.map((j) => ({
         id: j.id,
         inputPath: j.inputPath,
         outputDir: j.outputDir || outputDir,
-        preset: j.preset
-      }))
-    })
-  }, [jobs, outputDir, setIsEncoding])
+        preset: j.preset,
+      })),
+    });
+  }, [jobs, outputDir, setIsEncoding]);
 
   const handleCancelAll = useCallback(async () => {
-    await window.api.encodeCancelAll()
-    const store = useEncoderStore.getState()
+    await window.api.encodeCancelAll();
+    const store = useEncoderStore.getState();
     jobs.forEach((j) => {
       if (j.status === 'encoding' || j.status === 'pending') {
-        store.setJobStatus(j.id, 'cancelled')
+        store.setJobStatus(j.id, 'cancelled');
       }
-    })
-    setIsEncoding(false)
-  }, [jobs, setIsEncoding])
+    });
+    setIsEncoding(false);
+  }, [jobs, setIsEncoding]);
 
-  const pendingCount = jobs.filter((j) => j.status === 'pending').length
-  const encodingCount = jobs.filter((j) => j.status === 'encoding').length
-  const doneCount = jobs.filter((j) => j.status === 'done').length
-  const errorCount = jobs.filter((j) => j.status === 'error').length
+  const pendingCount = jobs.filter((j) => j.status === 'pending').length;
+  const encodingCount = jobs.filter((j) => j.status === 'encoding').length;
+  const doneCount = jobs.filter((j) => j.status === 'done').length;
+  const errorCount = jobs.filter((j) => j.status === 'error').length;
 
   return (
     <div className="flex flex-col h-full">
@@ -81,8 +81,8 @@ export default function QueuePanel(): JSX.Element {
           <select
             value={activePreset.id}
             onChange={(e) => {
-              const p = BUILT_IN_PRESETS.find((pr) => pr.id === e.target.value)
-              if (p) setActivePreset(p)
+              const p = BUILT_IN_PRESETS.find((pr) => pr.id === e.target.value);
+              if (p) setActivePreset(p);
             }}
             className="bg-transparent outline-none cursor-pointer pr-4 max-w-[180px]"
           >
@@ -102,7 +102,9 @@ export default function QueuePanel(): JSX.Element {
           title={outputDir || 'Same folder as source'}
         >
           <FolderOpen size={13} />
-          <span className="truncate">{outputDir ? outputDir.split(/[\\/]/).pop() : 'Output: Source'}</span>
+          <span className="truncate">
+            {outputDir ? outputDir.split(/[\\/]/).pop() : 'Output: Source'}
+          </span>
         </button>
 
         <div className="flex-1" />
@@ -183,5 +185,5 @@ export default function QueuePanel(): JSX.Element {
         </div>
       )}
     </div>
-  )
+  );
 }

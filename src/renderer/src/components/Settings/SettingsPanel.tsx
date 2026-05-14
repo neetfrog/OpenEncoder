@@ -1,20 +1,20 @@
-import { useState, useCallback } from 'react'
-import { FolderOpen, Cpu, Info, ChevronDown, ChevronUp } from 'lucide-react'
-import { useEncoderStore } from '@renderer/store/useEncoderStore'
+import { useState, useCallback } from 'react';
+import { FolderOpen, Cpu, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { useEncoderStore } from '@renderer/store/useEncoderStore';
 
 export default function SettingsPanel(): JSX.Element {
-  const { outputDir, setOutputDir, concurrentJobs, setConcurrentJobs } = useEncoderStore()
-  const [appVersion, setAppVersion] = useState('')
-  const [showAbout, setShowAbout] = useState(false)
+  const { outputDir, setOutputDir, concurrentJobs, setConcurrentJobs } = useEncoderStore();
+  const [appVersion, setAppVersion] = useState('');
+  const [showAbout, setShowAbout] = useState(false);
 
   useState(() => {
-    window.api.appVersion().then(setAppVersion)
-  })
+    window.api.appVersion().then(setAppVersion);
+  });
 
   const handleChooseOutput = useCallback(async () => {
-    const dir = await window.api.openFolder()
-    if (dir) setOutputDir(dir)
-  }, [setOutputDir])
+    const dir = await window.api.openFolder();
+    if (dir) setOutputDir(dir);
+  }, [setOutputDir]);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -25,11 +25,15 @@ export default function SettingsPanel(): JSX.Element {
       <div className="px-6 py-6 space-y-6 max-w-xl">
         {/* Output Section */}
         <section>
-          <h3 className="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Output</h3>
+          <h3 className="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">
+            Output
+          </h3>
 
           <div className="space-y-4 bg-[#161b22] rounded-xl border border-[#21262d] p-4">
             <div>
-              <label className="block text-sm font-medium text-[#e6edf3] mb-1.5">Default Output Folder</label>
+              <label className="block text-sm font-medium text-[#e6edf3] mb-1.5">
+                Default Output Folder
+              </label>
               <p className="text-xs text-[#8b949e] mb-2">
                 Where exported files are saved. Leave empty to save next to source.
               </p>
@@ -59,7 +63,9 @@ export default function SettingsPanel(): JSX.Element {
 
         {/* Performance Section */}
         <section>
-          <h3 className="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">Performance</h3>
+          <h3 className="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">
+            Performance
+          </h3>
 
           <div className="space-y-4 bg-[#161b22] rounded-xl border border-[#21262d] p-4">
             <div>
@@ -75,16 +81,23 @@ export default function SettingsPanel(): JSX.Element {
                     key={n}
                     onClick={() => setConcurrentJobs(n)}
                     className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors
-                      ${concurrentJobs === n
-                        ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400'
-                        : 'border-[#30363d] bg-[#21262d] text-[#8b949e] hover:border-[#484f58] hover:text-[#e6edf3]'
+                      ${
+                        concurrentJobs === n
+                          ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400'
+                          : 'border-[#30363d] bg-[#21262d] text-[#8b949e] hover:border-[#484f58] hover:text-[#e6edf3]'
                       }`}
                   >
                     {n}
                   </button>
                 ))}
                 <span className="text-xs text-[#484f58]">
-                  {concurrentJobs === 1 ? 'Sequential' : concurrentJobs === 2 ? 'Balanced (default)' : concurrentJobs >= 3 ? 'Parallel (high CPU)' : ''}
+                  {concurrentJobs === 1
+                    ? 'Sequential'
+                    : concurrentJobs === 2
+                      ? 'Balanced (default)'
+                      : concurrentJobs >= 3
+                        ? 'Parallel (high CPU)'
+                        : ''}
                 </span>
               </div>
             </div>
@@ -110,13 +123,15 @@ export default function SettingsPanel(): JSX.Element {
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-[#e6edf3]">MediaForge</div>
-                  <div className="text-xs text-[#8b949e]">v{appVersion || '0.1.0'} · Open Source</div>
+                  <div className="text-xs text-[#8b949e]">
+                    v{appVersion || '0.1.0'} · Open Source
+                  </div>
                 </div>
               </div>
 
               <p className="text-xs text-[#8b949e] leading-relaxed">
-                Open-source media encoder powered by FFmpeg. Supports H.264, H.265, VP9, AV1, ProRes, 
-                and many more formats. No watermarks. No subscriptions. Yours forever.
+                Open-source media encoder powered by FFmpeg. Supports H.264, H.265, VP9, AV1,
+                ProRes, and many more formats. No watermarks. No subscriptions. Yours forever.
               </p>
 
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -124,7 +139,7 @@ export default function SettingsPanel(): JSX.Element {
                   ['Engine', 'FFmpeg'],
                   ['UI', 'Electron + React'],
                   ['Platform', process.platform],
-                  ['License', 'MIT']
+                  ['License', 'MIT'],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between py-1 border-b border-[#21262d]">
                     <span className="text-[#484f58]">{k}</span>
@@ -137,5 +152,5 @@ export default function SettingsPanel(): JSX.Element {
         </section>
       </div>
     </div>
-  )
+  );
 }

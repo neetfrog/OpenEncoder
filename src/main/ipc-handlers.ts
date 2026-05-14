@@ -1,15 +1,13 @@
-import { ipcMain, dialog, app, BrowserWindow } from 'electron'
-import Store from 'electron-store'
+import { ipcMain, dialog, app, BrowserWindow } from 'electron';
+import Store from 'electron-store';
+import { probeFile, encodeFile, buildOutputPath, cancelJob, cancelAllJobs } from './ffmpeg-service';
 import {
-  probeFile,
-  encodeFile,
-  buildOutputPath,
-  cancelJob,
-  cancelAllJobs
-} from './ffmpeg-service'
-import { validateFilePathForEncoding, validateEncodePayload, withErrorHandling } from './ipc-security'
-import type { AppSettings, EncodeStartPayload } from '../shared/types'
-import { IPC } from '../shared/types'
+  validateFilePathForEncoding,
+  validateEncodePayload,
+  withErrorHandling,
+} from './ipc-security';
+import type { AppSettings, EncodeStartPayload } from '../shared/types';
+import { IPC } from '../shared/types';
 
 // ─── Persistent store ─────────────────────────────────────────────────────────
 
@@ -19,48 +17,48 @@ const store = new Store<AppSettings>({
     concurrentJobs: 2,
     theme: 'dark',
     autoStart: false,
-    customPresets: []
-  }
-})
+    customPresets: [],
+  },
+});
 
 // ─── Job queue ────────────────────────────────────────────────────────────────
 
 interface QueuedJob {
-  id: string
-  inputPath: string
-  outputDir: string
-  presetId: string
-  preset: import('../shared/types').Preset
-  duration: number
+  id: string;
+  inputPath: string;
+  outputDir: string;
+  presetId: string;
+  preset: import('../shared/types').Preset;
+  duration: number;
 }
 
-const pendingQueue: QueuedJob[] = []
-let activeCount = 0
+const pendingQueue: QueuedJob[] = [];
+let activeCount = 0;
 
 function getMaxConcurrent(): number {
-  return (store.get('concurrentJobs') as number) || 2
+  return (store.get('concurrentJobs') as number) || 2;
 }
 
 function drainQueue(win: BrowserWindow): void {
   while (activeCount < getMaxConcurrent() && pendingQueue.length > 0) {
-    const job = pendingQueue.shift()!
-    activeCount++
+    const job = pendingQueue.shift()!;
+    activeCount++;
 
-    const outputPath = buildOutputPath(job.inputPath, job.outputDir, job.preset)
+    const outputPath = buildOutputPath(job.inputPath, job.outputDir, job.preset);
 
     encodeFile(job.id, job.inputPath, outputPath, job.preset, job.duration, {
       onProgress: (payload) => win.webContents.send(IPC.ENCODE_PROGRESS, payload),
       onComplete: (payload) => {
-        activeCount--
-        win.webContents.send(IPC.ENCODE_COMPLETE, payload)
-        drainQueue(win)
+        activeCount--;
+        win.webContents.send(IPC.ENCODE_COMPLETE, payload);
+        drainQueue(win);
       },
       onError: (payload) => {
-        activeCount--
-        win.webContents.send(IPC.ENCODE_ERROR, payload)
-        drainQueue(win)
-      }
-    })
+        activeCount--;
+        win.webContents.send(IPC.ENCODE_ERROR, payload);
+        drainQueue(win);
+      },
+    });
   }
 }
 
@@ -71,24 +69,24 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(
     IPC.PROBE,
     withErrorHandling(async (_event, filePath: string) => {
-      validateFilePathForEncoding(filePath)
-      return await probeFile(filePath)
+      validateFilePathForEncoding(filePath);
+      return await probeFile(filePath);
     }, 'PROBE')
-  )
+  );
 
   // Start encoding jobs
   ipcMain.handle(
     IPC.ENCODE_START,
     withErrorHandling(async (event, payload: EncodeStartPayload) => {
-      validateEncodePayload(payload)
-      const win = BrowserWindow.fromWebContents(event.sender)
-      if (!win) return
+      validateEncodePayload(payload);
+      const win = BrowserWindow.fromWebContents(event.sender);
+      if (!win) return;
 
       for (const job of payload.jobs) {
-        let duration = 0
+        let duration = 0;
         try {
-          const info = await probeFile(job.inputPath)
-          duration = info.duration
+          const info = await probeFile(job.inputPath);
+          duration = info.duration;
         } catch {
           // proceed with 0 duration (progress will fall back to timemark)
         }
@@ -99,32 +97,32 @@ export function registerIpcHandlers(): void {
           outputDir: job.outputDir,
           presetId: job.preset.id,
           preset: job.preset,
-          duration
-        })
+          duration,
+        });
       }
 
-      drainQueue(win)
+      drainQueue(win);
     }, 'ENCODE_START')
-  )
+  );
 
   // Cancel a single job
   ipcMain.handle(IPC.ENCODE_CANCEL, async (_event, jobId: string) => {
-    cancelJob(jobId)
+    cancelJob(jobId);
     // Remove from pending queue too
-    const idx = pendingQueue.findIndex((j) => j.id === jobId)
-    if (idx !== -1) pendingQueue.splice(idx, 1)
-  })
+    const idx = pendingQueue.findIndex((j) => j.id === jobId);
+    if (idx !== -1) pendingQueue.splice(idx, 1);
+  });
 
   // Cancel all
   ipcMain.handle(IPC.ENCODE_CANCEL_ALL, async () => {
-    cancelAllJobs()
-    pendingQueue.length = 0
-    activeCount = 0
-  })
+    cancelAllJobs();
+    pendingQueue.length = 0;
+    activeCount = 0;
+  });
 
   // Open file dialog
   ipcMain.handle(IPC.DIALOG_OPEN_FILES, async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
+    const win = BrowserWindow.fromWebContents(event.sender);
     const result = await dialog.showOpenDialog(win!, {
       title: 'Add Media Files',
       properties: ['openFile', 'multiSelections'],
@@ -132,32 +130,52 @@ export function registerIpcHandlers(): void {
         {
           name: 'Media Files',
           extensions: [
-            'mp4', 'mov', 'mkv', 'avi', 'wmv', 'flv', 'webm', 'm4v',
-            'ts', 'mts', 'm2ts', 'mxf', 'r3d', 'braw',
-            'mp3', 'aac', 'flac', 'wav', 'ogg', 'opus', 'm4a', 'wma',
-            'gif', 'apng'
-          ]
+            'mp4',
+            'mov',
+            'mkv',
+            'avi',
+            'wmv',
+            'flv',
+            'webm',
+            'm4v',
+            'ts',
+            'mts',
+            'm2ts',
+            'mxf',
+            'r3d',
+            'braw',
+            'mp3',
+            'aac',
+            'flac',
+            'wav',
+            'ogg',
+            'opus',
+            'm4a',
+            'wma',
+            'gif',
+            'apng',
+          ],
         },
-        { name: 'All Files', extensions: ['*'] }
-      ]
-    })
-    return result.canceled ? [] : result.filePaths
-  })
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
+    return result.canceled ? [] : result.filePaths;
+  });
 
   // Open folder dialog
   ipcMain.handle(IPC.DIALOG_OPEN_FOLDER, async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
+    const win = BrowserWindow.fromWebContents(event.sender);
     const result = await dialog.showOpenDialog(win!, {
       title: 'Select Output Folder',
-      properties: ['openDirectory', 'createDirectory']
-    })
-    return result.canceled ? null : result.filePaths[0]
-  })
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    return result.canceled ? null : result.filePaths[0];
+  });
 
   // Persistent store
-  ipcMain.handle(IPC.STORE_GET, (_event, key: string) => store.get(key))
-  ipcMain.handle(IPC.STORE_SET, (_event, key: string, value: unknown) => store.set(key, value))
+  ipcMain.handle(IPC.STORE_GET, (_event, key: string) => store.get(key));
+  ipcMain.handle(IPC.STORE_SET, (_event, key: string, value: unknown) => store.set(key, value));
 
   // App version
-  ipcMain.handle(IPC.APP_VERSION, () => app.getVersion())
+  ipcMain.handle(IPC.APP_VERSION, () => app.getVersion());
 }

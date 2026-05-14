@@ -1,7 +1,7 @@
-import type { ElectronAPI } from './index'
+import type { ElectronAPI } from './index';
 
 declare global {
   interface Window {
-    api: ElectronAPI
+    api: ElectronAPI;
   }
 }

@@ -1,4 +1,4 @@
-import type { Preset } from './types'
+import type { Preset } from './types';
 
 export const BUILT_IN_PRESETS: Preset[] = [
   // ─── Video: H.264 ───────────────────────────────────────────────────────────
@@ -15,7 +15,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     width: 1920,
     height: 1080,
     audioCodec: 'aac',
-    audioBitrate: '192k'
+    audioBitrate: '192k',
   },
   {
     id: 'h264-720p',
@@ -30,7 +30,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     width: 1280,
     height: 720,
     audioCodec: 'aac',
-    audioBitrate: '128k'
+    audioBitrate: '128k',
   },
   {
     id: 'h264-4k',
@@ -45,7 +45,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     width: 3840,
     height: 2160,
     audioCodec: 'aac',
-    audioBitrate: '256k'
+    audioBitrate: '256k',
   },
   {
     id: 'h264-source',
@@ -58,7 +58,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     crf: 23,
     preset: 'medium',
     audioCodec: 'aac',
-    audioBitrate: '192k'
+    audioBitrate: '192k',
   },
   // ─── Video: H.265 / HEVC ────────────────────────────────────────────────────
   {
@@ -75,7 +75,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     height: 1080,
     audioCodec: 'aac',
     audioBitrate: '192k',
-    extraArgs: ['-tag:v', 'hvc1']
+    extraArgs: ['-tag:v', 'hvc1'],
   },
   {
     id: 'h265-4k',
@@ -91,7 +91,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     height: 2160,
     audioCodec: 'aac',
     audioBitrate: '256k',
-    extraArgs: ['-tag:v', 'hvc1']
+    extraArgs: ['-tag:v', 'hvc1'],
   },
   // ─── Video: WebM / VP9 ──────────────────────────────────────────────────────
   {
@@ -107,7 +107,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     width: 1920,
     height: 1080,
     audioCodec: 'libopus',
-    audioBitrate: '192k'
+    audioBitrate: '192k',
   },
   {
     id: 'webm-720p',
@@ -122,7 +122,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     width: 1280,
     height: 720,
     audioCodec: 'libopus',
-    audioBitrate: '128k'
+    audioBitrate: '128k',
   },
   // ─── Video: ProRes ──────────────────────────────────────────────────────────
   {
@@ -134,7 +134,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     container: 'mov',
     videoCodec: 'prores_ks',
     audioCodec: 'pcm_s16le',
-    extraArgs: ['-profile:v', '2']
+    extraArgs: ['-profile:v', '2'],
   },
   {
     id: 'prores-4444',
@@ -145,7 +145,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     container: 'mov',
     videoCodec: 'prores_ks',
     audioCodec: 'pcm_s16le',
-    extraArgs: ['-profile:v', '4']
+    extraArgs: ['-profile:v', '4'],
   },
   // ─── Video: AV1 ─────────────────────────────────────────────────────────────
   {
@@ -161,7 +161,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     width: 1920,
     height: 1080,
     audioCodec: 'libopus',
-    audioBitrate: '192k'
+    audioBitrate: '192k',
   },
   // ─── Video: GIF ─────────────────────────────────────────────────────────────
   {
@@ -174,7 +174,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     videoCodec: 'gif',
     width: 480,
     fps: 15,
-    extraArgs: ['-vf', 'split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse']
+    extraArgs: ['-vf', 'split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse'],
   },
   // ─── Audio ──────────────────────────────────────────────────────────────────
   {
@@ -186,7 +186,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     container: 'mp3',
     audioCodec: 'libmp3lame',
     audioBitrate: '320k',
-    audioSampleRate: 44100
+    audioSampleRate: 44100,
   },
   {
     id: 'mp3-192',
@@ -197,7 +197,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     container: 'mp3',
     audioCodec: 'libmp3lame',
     audioBitrate: '192k',
-    audioSampleRate: 44100
+    audioSampleRate: 44100,
   },
   {
     id: 'aac-256',
@@ -208,7 +208,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     container: 'm4a',
     audioCodec: 'aac',
     audioBitrate: '256k',
-    audioSampleRate: 44100
+    audioSampleRate: 44100,
   },
   {
     id: 'flac',
@@ -218,7 +218,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     format: 'FLAC',
     container: 'flac',
     audioCodec: 'flac',
-    audioSampleRate: 44100
+    audioSampleRate: 44100,
   },
   {
     id: 'opus-160',
@@ -229,7 +229,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     container: 'ogg',
     audioCodec: 'libopus',
     audioBitrate: '160k',
-    audioSampleRate: 48000
+    audioSampleRate: 48000,
   },
   {
     id: 'wav-pcm',
@@ -239,13 +239,13 @@ export const BUILT_IN_PRESETS: Preset[] = [
     format: 'WAV',
     container: 'wav',
     audioCodec: 'pcm_s16le',
-    audioSampleRate: 44100
-  }
-]
+    audioSampleRate: 44100,
+  },
+];
 
 export const PRESET_CATEGORIES = [
   { id: 'all', label: 'All' },
   { id: 'video', label: 'Video' },
   { id: 'audio', label: 'Audio' },
-  { id: 'image', label: 'Image' }
-] as const
+  { id: 'image', label: 'Image' },
+] as const;

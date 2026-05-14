@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { Plus, FolderOpen, Trash2, Play, Square, ChevronDown } from 'lucide-react';
 import { useEncoderStore } from '@renderer/store/useEncoderStore';
 import QueueItem from './QueueItem';

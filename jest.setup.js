@@ -7,3 +7,8 @@ global.window = {
     openFolder: jest.fn(),
   },
 };
+
+// Mock Electron process properties for main process tests
+if (typeof process !== 'undefined' && !process.resourcesPath) {
+  process.resourcesPath = '/mock/resources';
+}

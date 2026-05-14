@@ -36,8 +36,7 @@ module.exports = {
           '@shared/*': ['src/shared/*'],
           '@renderer/*': ['src/renderer/src/*']
         }
-      },
-      isolatedModules: true
+      }
     }]
   }
 }

@@ -102,7 +102,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ steps.version.outputs.version }}
           files: |
-            artifacts/windows/**/MediaForge*.exe
+            artifacts/windows/**/MediaForge 0.1.0.exe
+            artifacts/windows/**/MediaForge Setup 0.1.0.exe
           generate_release_notes: true
           draft: false
           prerelease: false

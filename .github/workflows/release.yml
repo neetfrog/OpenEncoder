@@ -51,9 +51,7 @@ jobs:
         run: npm run build
 
       - name: Build Windows installer and portable
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run dist:win
+        run: npm run dist:win -- --publish never
 
       - name: List built artifacts
         shell: powershell
@@ -102,8 +100,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ steps.version.outputs.version }}
           files: |
-            artifacts/windows/**/MediaForge 0.1.0.exe
-            artifacts/windows/**/MediaForge Setup 0.1.0.exe
+            artifacts/windows/**/*.exe
+            artifacts/windows/**/*.msi
           generate_release_notes: true
           draft: false
           prerelease: false

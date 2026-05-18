@@ -16,8 +16,7 @@ export interface MediaInfo {
   audioBitrate?: number;
   audioCodec?: string;
   audioChannels?: number;
-  audioSampleRate?: number;
-}
+  audioSampleRate?: number;  thumbnail?: string;}
 
 // ─── Presets ──────────────────────────────────────────────────────────────────
 

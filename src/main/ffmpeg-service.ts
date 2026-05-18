@@ -1,8 +1,11 @@
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from 'ffmpeg-static';
 import ffprobePath from 'ffprobe-static';
-import { existsSync } from 'fs';
+import { existsSync, promises as fsPromises } from 'fs';
 import { join, basename, dirname, parse as parsePath } from 'path';
+import { tmpdir } from 'os';
+import { randomUUID } from 'crypto';
+import { pathToFileURL } from 'url';
 import type {
   MediaInfo,
   Preset,
@@ -64,6 +67,43 @@ function resolveFfprobePath(): string {
 ffmpeg.setFfmpegPath(resolveFfmpegPath());
 ffmpeg.setFfprobePath(resolveFfprobePath());
 
+const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.avif']);
+
+function isImageFile(filePath: string): boolean {
+  return imageExtensions.has(parsePath(filePath).ext.toLowerCase());
+}
+
+async function generateThumbnail(filePath: string): Promise<string | undefined> {
+  if (isImageFile(filePath)) {
+    return pathToFileURL(filePath).href;
+  }
+
+  const fileName = `mediaforge-thumb-${randomUUID()}.png`;
+  const outputPath = join(tmpdir(), fileName);
+
+  return new Promise((resolve) => {
+    ffmpeg(filePath)
+      .seekInput(1)
+      .outputOptions(['-frames:v 1'])
+      .size('240x?')
+      .output(outputPath)
+      .on('end', async () => {
+        try {
+          const buffer = await fsPromises.readFile(outputPath);
+          await fsPromises.unlink(outputPath).catch(() => {});
+          resolve(`data:image/png;base64,${buffer.toString('base64')}`);
+        } catch {
+          resolve(undefined);
+        }
+      })
+      .on('error', async () => {
+        await fsPromises.unlink(outputPath).catch(() => {});
+        resolve(undefined);
+      })
+      .run();
+  });
+}
+
 // ─── Active jobs map ──────────────────────────────────────────────────────────
 
 interface ActiveJob {
@@ -91,28 +131,33 @@ export function probeFile(filePath: string): Promise<MediaInfo> {
           })()
         : undefined;
 
-      resolve({
-        path: filePath,
-        fileName: basename(filePath),
-        duration: parseFloat(String(format.duration ?? '0')),
-        size: parseInt(String(format.size ?? '0'), 10),
-        format: format.format_long_name ?? format.format_name ?? '',
-        width: videoStream?.width,
-        height: videoStream?.height,
-        fps: fps ? Math.round(fps * 100) / 100 : undefined,
-        videoBitrate: videoStream?.bit_rate
-          ? parseInt(String(videoStream.bit_rate), 10)
-          : undefined,
-        videoCodec: videoStream?.codec_name,
-        audioBitrate: audioStream?.bit_rate
-          ? parseInt(String(audioStream.bit_rate), 10)
-          : undefined,
-        audioCodec: audioStream?.codec_name,
-        audioChannels: audioStream?.channels,
-        audioSampleRate: audioStream?.sample_rate
-          ? parseInt(String(audioStream.sample_rate), 10)
-          : undefined,
-      });
+      generateThumbnail(filePath)
+        .catch(() => undefined)
+        .then((thumbnail) => {
+          resolve({
+            path: filePath,
+            fileName: basename(filePath),
+            duration: parseFloat(String(format.duration ?? '0')),
+            size: parseInt(String(format.size ?? '0'), 10),
+            format: format.format_long_name ?? format.format_name ?? '',
+            width: videoStream?.width,
+            height: videoStream?.height,
+            fps: fps ? Math.round(fps * 100) / 100 : undefined,
+            videoBitrate: videoStream?.bit_rate
+              ? parseInt(String(videoStream.bit_rate), 10)
+              : undefined,
+            videoCodec: videoStream?.codec_name,
+            audioBitrate: audioStream?.bit_rate
+              ? parseInt(String(audioStream.bit_rate), 10)
+              : undefined,
+            audioCodec: audioStream?.codec_name,
+            audioChannels: audioStream?.channels,
+            audioSampleRate: audioStream?.sample_rate
+              ? parseInt(String(audioStream.sample_rate), 10)
+              : undefined,
+            thumbnail,
+          });
+        });
     });
   });
 }

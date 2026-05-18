@@ -23,16 +23,24 @@ export function useFFmpegEvents(): void {
       );
     });
 
+    const stopEncodingIfIdle = (): void => {
+      if (store.encodingJobs().length === 0) {
+        store.setIsEncoding(false);
+      }
+    };
+
     const removeComplete = window.api.onEncodeComplete((payload: EncodeCompletePayload) => {
       store.setJobStatus(payload.jobId, 'done', {
         progress: 100,
         outputPath: payload.outputPath,
         finishedAt: Date.now(),
       });
+      stopEncodingIfIdle();
     });
 
     const removeError = window.api.onEncodeError((payload: EncodeErrorPayload) => {
       store.setJobStatus(payload.jobId, 'error', { error: payload.error });
+      stopEncodingIfIdle();
     });
 
     return () => {

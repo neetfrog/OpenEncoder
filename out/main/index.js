@@ -8,31 +8,79 @@ const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
 const ffprobePath = require("ffprobe-static");
 const fs = require("fs");
-function resolveFfmpegPath() {
-  const resourcesPath = process.resourcesPath;
-  const candidates = [
-    path.join(resourcesPath, "ffmpeg-static", process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg"),
-    ffmpegPath
-  ];
-  for (const p of candidates) {
-    if (p && fs.existsSync(p)) return p;
+const os = require("os");
+const crypto = require("crypto");
+const url = require("url");
+function resolveBinaryPath(candidates) {
+  for (const candidate of candidates) {
+    if (candidate && fs.existsSync(candidate)) {
+      return candidate;
+    }
   }
-  return ffmpegPath;
+  return candidates[candidates.length - 1] ?? "";
+}
+function resolveFfmpegPath() {
+  const executable = typeof ffmpegPath === "string" ? ffmpegPath : "";
+  const candidates = [];
+  if (process.resourcesPath) {
+    candidates.push(
+      path.join(
+        process.resourcesPath,
+        "ffmpeg-static",
+        process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg"
+      )
+    );
+  }
+  candidates.push(executable);
+  return resolveBinaryPath(candidates);
 }
 function resolveFfprobePath() {
-  const resourcesPath = process.resourcesPath;
-  const bin = process.platform === "win32" ? "ffprobe.exe" : "ffprobe";
-  const candidates = [
-    path.join(resourcesPath, "ffprobe-static", "bin", process.platform, process.arch, bin),
-    ffprobePath.path
-  ];
-  for (const p of candidates) {
-    if (p && fs.existsSync(p)) return p;
+  const executable = typeof ffprobePath === "string" ? ffprobePath : ffprobePath?.path ?? "";
+  const candidates = [];
+  if (process.resourcesPath) {
+    candidates.push(
+      path.join(
+        process.resourcesPath,
+        "ffprobe-static",
+        "bin",
+        process.platform,
+        process.arch,
+        process.platform === "win32" ? "ffprobe.exe" : "ffprobe"
+      )
+    );
   }
-  return ffprobePath.path;
+  candidates.push(executable);
+  return resolveBinaryPath(candidates);
 }
 ffmpeg.setFfmpegPath(resolveFfmpegPath());
 ffmpeg.setFfprobePath(resolveFfprobePath());
+const imageExtensions = /* @__PURE__ */ new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff", ".avif"]);
+function isImageFile(filePath) {
+  return imageExtensions.has(path.parse(filePath).ext.toLowerCase());
+}
+async function generateThumbnail(filePath) {
+  if (isImageFile(filePath)) {
+    return url.pathToFileURL(filePath).href;
+  }
+  const fileName = `mediaforge-thumb-${crypto.randomUUID()}.png`;
+  const outputPath = path.join(os.tmpdir(), fileName);
+  return new Promise((resolve) => {
+    ffmpeg(filePath).seekInput(1).outputOptions(["-frames:v 1"]).size("240x?").output(outputPath).on("end", async () => {
+      try {
+        const buffer = await fs.promises.readFile(outputPath);
+        await fs.promises.unlink(outputPath).catch(() => {
+        });
+        resolve(`data:image/png;base64,${buffer.toString("base64")}`);
+      } catch {
+        resolve(void 0);
+      }
+    }).on("error", async () => {
+      await fs.promises.unlink(outputPath).catch(() => {
+      });
+      resolve(void 0);
+    }).run();
+  });
+}
 const activeJobs = /* @__PURE__ */ new Map();
 function probeFile(filePath) {
   return new Promise((resolve, reject) => {
@@ -45,21 +93,24 @@ function probeFile(filePath) {
         const parts = videoStream.r_frame_rate.split("/");
         return parts.length === 2 ? parseFloat(parts[0]) / parseFloat(parts[1]) : void 0;
       })() : void 0;
-      resolve({
-        path: filePath,
-        fileName: path.basename(filePath),
-        duration: parseFloat(String(format.duration ?? "0")),
-        size: parseInt(String(format.size ?? "0"), 10),
-        format: format.format_long_name ?? format.format_name ?? "",
-        width: videoStream?.width,
-        height: videoStream?.height,
-        fps: fps ? Math.round(fps * 100) / 100 : void 0,
-        videoBitrate: videoStream?.bit_rate ? parseInt(String(videoStream.bit_rate), 10) : void 0,
-        videoCodec: videoStream?.codec_name,
-        audioBitrate: audioStream?.bit_rate ? parseInt(String(audioStream.bit_rate), 10) : void 0,
-        audioCodec: audioStream?.codec_name,
-        audioChannels: audioStream?.channels,
-        audioSampleRate: audioStream?.sample_rate ? parseInt(String(audioStream.sample_rate), 10) : void 0
+      generateThumbnail(filePath).catch(() => void 0).then((thumbnail) => {
+        resolve({
+          path: filePath,
+          fileName: path.basename(filePath),
+          duration: parseFloat(String(format.duration ?? "0")),
+          size: parseInt(String(format.size ?? "0"), 10),
+          format: format.format_long_name ?? format.format_name ?? "",
+          width: videoStream?.width,
+          height: videoStream?.height,
+          fps: fps ? Math.round(fps * 100) / 100 : void 0,
+          videoBitrate: videoStream?.bit_rate ? parseInt(String(videoStream.bit_rate), 10) : void 0,
+          videoCodec: videoStream?.codec_name,
+          audioBitrate: audioStream?.bit_rate ? parseInt(String(audioStream.bit_rate), 10) : void 0,
+          audioCodec: audioStream?.codec_name,
+          audioChannels: audioStream?.channels,
+          audioSampleRate: audioStream?.sample_rate ? parseInt(String(audioStream.sample_rate), 10) : void 0,
+          thumbnail
+        });
       });
     });
   });
@@ -83,7 +134,9 @@ function encodeFile(jobId, inputPath, outputPath, preset, duration, callbacks) {
       cmd = cmd.outputOptions([`-preset ${preset.preset}`]);
     }
     if (preset.width && preset.height) {
-      cmd = cmd.outputOptions([`-vf scale=${preset.width}:${preset.height}:force_original_aspect_ratio=decrease`]);
+      cmd = cmd.outputOptions([
+        `-vf scale=${preset.width}:${preset.height}:force_original_aspect_ratio=decrease`
+      ]);
     } else if (preset.width) {
       cmd = cmd.outputOptions([`-vf scale=${preset.width}:-2`]);
     }

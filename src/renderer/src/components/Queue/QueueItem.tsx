@@ -37,7 +37,11 @@ function QueueItem({ job }: Props): JSX.Element {
     async (e: React.MouseEvent) => {
       e.stopPropagation();
       await window.api.encodeCancel(job.id);
-      useEncoderStore.getState().setJobStatus(job.id, 'cancelled');
+      const store = useEncoderStore.getState();
+      store.setJobStatus(job.id, 'cancelled');
+      if (store.encodingJobs().length === 0) {
+        store.setIsEncoding(false);
+      }
     },
     [job.id]
   );
@@ -51,25 +55,33 @@ function QueueItem({ job }: Props): JSX.Element {
         ${job.status === 'done' ? 'opacity-70' : ''}
       `}
     >
-      {/* Extension badge */}
-      <div className="w-8 shrink-0 flex justify-center">
-        <span
-          className={`text-[9px] font-bold px-1 py-0.5 rounded uppercase tracking-wider
-          ${
-            ext === 'MP4' || ext === 'MOV'
-              ? 'bg-blue-500/20 text-blue-400'
-              : ext === 'MKV'
-                ? 'bg-purple-500/20 text-purple-400'
-                : ext === 'WEBM'
-                  ? 'bg-teal-500/20 text-teal-400'
-                  : ['MP3', 'AAC', 'FLAC', 'WAV', 'OGG'].includes(ext)
-                    ? 'bg-orange-500/20 text-orange-400'
-                    : 'bg-[#21262d] text-[#8b949e]'
-          }
-        `}
-        >
-          {ext || '?'}
-        </span>
+      {/* File preview */}
+      <div className="w-12 h-12 shrink-0 overflow-hidden rounded-md bg-[#161b22] border border-[#21262d] flex items-center justify-center">
+        {job.mediaInfo?.thumbnail ? (
+          <img
+            src={job.mediaInfo.thumbnail}
+            alt={fileName}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span
+            className={`text-[9px] font-bold px-1 py-0.5 rounded uppercase tracking-wider
+            ${
+              ext === 'MP4' || ext === 'MOV'
+                ? 'bg-blue-500/20 text-blue-400'
+                : ext === 'MKV'
+                  ? 'bg-purple-500/20 text-purple-400'
+                  : ext === 'WEBM'
+                    ? 'bg-teal-500/20 text-teal-400'
+                    : ['MP3', 'AAC', 'FLAC', 'WAV', 'OGG'].includes(ext)
+                      ? 'bg-orange-500/20 text-orange-400'
+                      : 'bg-[#21262d] text-[#8b949e]'
+            }
+          `}
+          >
+            {ext || '?'}
+          </span>
+        )}
       </div>
 
       {/* Filename */}
@@ -102,13 +114,28 @@ function QueueItem({ job }: Props): JSX.Element {
 
       {/* Preset selector */}
       <div className="w-40 shrink-0">
-        {job.status === 'pending' ? (
+        {job.status !== 'encoding' ? (
           <div className="relative flex items-center bg-[#21262d] rounded border border-transparent hover:border-[#30363d] transition-colors">
             <select
               value={job.preset.id}
               onChange={(e) => {
                 const p = BUILT_IN_PRESETS.find((pr) => pr.id === e.target.value);
-                if (p) setJobPreset(job.id, p);
+                if (!p) return;
+                const store = useEncoderStore.getState();
+                setJobPreset(job.id, p);
+                if (job.status !== 'pending') {
+                  store.setJobStatus(job.id, 'pending', {
+                    progress: 0,
+                    currentFps: undefined,
+                    currentBitrate: undefined,
+                    eta: undefined,
+                    timemark: undefined,
+                    outputPath: '',
+                    startedAt: undefined,
+                    finishedAt: undefined,
+                    error: undefined,
+                  });
+                }
               }}
               onClick={(e) => e.stopPropagation()}
               className="w-full bg-transparent text-[11px] text-[#e6edf3] px-2 py-1 outline-none cursor-pointer appearance-none pr-6"

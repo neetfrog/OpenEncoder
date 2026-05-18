@@ -10,6 +10,8 @@ const IPC = {
   ENCODE_ERROR: "encode:error",
   DIALOG_OPEN_FILES: "dialog:openFiles",
   DIALOG_OPEN_FOLDER: "dialog:openFolder",
+  DIALOG_SHOW_MESSAGE: "dialog:showMessage",
+  SHOW_JOB_CONTEXT_MENU: "contextMenu:job",
   STORE_GET: "store:get",
   STORE_SET: "store:set",
   APP_VERSION: "app:version"
@@ -45,6 +47,8 @@ const api = {
   storeSet: (key, value) => electron.ipcRenderer.invoke(IPC.STORE_SET, key, value),
   // App
   appVersion: () => electron.ipcRenderer.invoke(IPC.APP_VERSION),
+  showErrorDialog: (title, message, detail) => electron.ipcRenderer.invoke(IPC.DIALOG_SHOW_MESSAGE, title, message, detail),
+  showJobContextMenu: (jobId, jobStatus, filePath) => electron.ipcRenderer.invoke(IPC.SHOW_JOB_CONTEXT_MENU, jobId, jobStatus, filePath),
   // Window controls
   windowMinimize: () => electron.ipcRenderer.send("window:minimize"),
   windowMaximize: () => electron.ipcRenderer.send("window:maximize"),

@@ -135,10 +135,12 @@ function encodeFile(jobId, inputPath, outputPath, preset, duration, callbacks) {
     }
     if (preset.width && preset.height) {
       cmd = cmd.outputOptions([
-        `-vf scale=${preset.width}:${preset.height}:force_original_aspect_ratio=decrease`
+        `-vf scale=${preset.width}:${preset.height}:force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2`
       ]);
     } else if (preset.width) {
-      cmd = cmd.outputOptions([`-vf scale=${preset.width}:-2`]);
+      cmd = cmd.outputOptions([
+        `-vf scale=${preset.width}:-2,pad=ceil(iw/2)*2:ceil(ih/2)*2`
+      ]);
     }
     if (preset.fps) {
       cmd = cmd.fps(preset.fps);
@@ -158,6 +160,12 @@ function encodeFile(jobId, inputPath, outputPath, preset, duration, callbacks) {
     cmd = cmd.outputOptions(preset.extraArgs);
   }
   cmd = cmd.format(preset.container);
+  cmd = cmd.outputOptions(["-y"]);
+  let stderrLog = "";
+  cmd.on("stderr", (line) => {
+    stderrLog += `${line}
+`;
+  });
   const startTime = Date.now();
   cmd.on("progress", (progress) => {
     let percent = progress.percent ?? 0;
@@ -186,7 +194,12 @@ function encodeFile(jobId, inputPath, outputPath, preset, duration, callbacks) {
     if (err.message.includes("SIGKILL") || err.message.includes("ffmpeg was killed")) {
       return;
     }
-    callbacks.onError({ jobId, error: err.message });
+    const extraDetails = stderrLog.trim() || (err.stderr ? String(err.stderr).trim() : "") || (err.output ? String(err.output).trim() : "");
+    callbacks.onError({
+      jobId,
+      error: err.message,
+      details: extraDetails || void 0
+    });
   });
   cmd.save(outputPath);
   activeJobs.set(jobId, { cmd, startTime });
@@ -256,6 +269,8 @@ const IPC = {
   ENCODE_ERROR: "encode:error",
   DIALOG_OPEN_FILES: "dialog:openFiles",
   DIALOG_OPEN_FOLDER: "dialog:openFolder",
+  DIALOG_SHOW_MESSAGE: "dialog:showMessage",
+  SHOW_JOB_CONTEXT_MENU: "contextMenu:job",
   STORE_GET: "store:get",
   STORE_SET: "store:set",
   APP_VERSION: "app:version"
@@ -385,6 +400,67 @@ function registerIpcHandlers() {
     });
     return result.canceled ? null : result.filePaths[0];
   });
+  electron.ipcMain.handle(
+    IPC.SHOW_JOB_CONTEXT_MENU,
+    async (event, jobId, jobStatus, filePath) => {
+      const win = electron.BrowserWindow.fromWebContents(event.sender);
+      if (!win) return null;
+      let selectedAction = null;
+      const menu = electron.Menu.buildFromTemplate([
+        {
+          label: "Copy file path",
+          click: () => {
+            electron.clipboard.writeText(filePath);
+            selectedAction = "copyPath";
+          }
+        },
+        {
+          label: "Reveal in Explorer",
+          click: () => {
+            electron.shell.showItemInFolder(filePath);
+            selectedAction = "reveal";
+          }
+        },
+        { type: "separator" },
+        jobStatus === "encoding" ? {
+          label: "Cancel encoding",
+          click: () => {
+            selectedAction = "cancel";
+          }
+        } : {
+          label: "Remove from queue",
+          click: () => {
+            selectedAction = "remove";
+          }
+        }
+      ]);
+      return new Promise((resolve) => {
+        menu.popup({
+          window: win,
+          callback: () => resolve(selectedAction)
+        });
+      });
+    }
+  );
+  electron.ipcMain.handle(
+    IPC.DIALOG_SHOW_MESSAGE,
+    async (_event, title, message, detail) => {
+      const result = await electron.dialog.showMessageBox({
+        type: "error",
+        title,
+        message,
+        detail: detail ?? "",
+        buttons: ["Copy error", "OK"],
+        defaultId: 1,
+        cancelId: 1
+      });
+      if (result.response === 0) {
+        electron.clipboard.writeText(detail ? `${message}
+
+${detail}` : message);
+      }
+    }
+  );
   electron.ipcMain.handle(IPC.STORE_GET, (_event, key) => store.get(key));
   electron.ipcMain.handle(IPC.STORE_SET, (_event, key, value) => store.set(key, value));
   electron.ipcMain.handle(IPC.APP_VERSION, () => electron.app.getVersion());
@@ -403,6 +479,7 @@ function setupErrorHandling() {
     console.error(`Renderer process crashed. Killed: ${killed}`);
   });
 }
+electron.app.commandLine.appendSwitch("disable-gpu-shader-disk-cache");
 exports.mainWindow = null;
 function createWindow() {
   exports.mainWindow = new electron.BrowserWindow({

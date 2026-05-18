@@ -39,7 +39,10 @@ export function useFFmpegEvents(): void {
     });
 
     const removeError = window.api.onEncodeError((payload: EncodeErrorPayload) => {
-      store.setJobStatus(payload.jobId, 'error', { error: payload.error });
+      store.setJobStatus(payload.jobId, 'error', {
+        error: payload.error,
+        errorDetails: payload.details,
+      });
       stopEncodingIfIdle();
     });
 

@@ -207,10 +207,12 @@ export function encodeFile(
     // Scale / resolution
     if (preset.width && preset.height) {
       cmd = cmd.outputOptions([
-        `-vf scale=${preset.width}:${preset.height}:force_original_aspect_ratio=decrease`,
+        `-vf scale=${preset.width}:${preset.height}:force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2`,
       ]);
     } else if (preset.width) {
-      cmd = cmd.outputOptions([`-vf scale=${preset.width}:-2`]);
+      cmd = cmd.outputOptions([
+        `-vf scale=${preset.width}:-2,pad=ceil(iw/2)*2:ceil(ih/2)*2`,
+      ]);
     }
 
     if (preset.fps) {
@@ -238,6 +240,13 @@ export function encodeFile(
 
   // ── Output format ───────────────────────────────────────────────────────────
   cmd = cmd.format(preset.container);
+  cmd = cmd.outputOptions(['-y']);
+
+  // ── Capture stderr for errors ─────────────────────────────────────────────────
+  let stderrLog = '';
+  cmd.on('stderr', (line: string) => {
+    stderrLog += `${line}\n`;
+  });
 
   // ── Progress ────────────────────────────────────────────────────────────────
   const startTime = Date.now();
@@ -278,7 +287,17 @@ export function encodeFile(
       // cancelled — don't report as error
       return;
     }
-    callbacks.onError({ jobId, error: err.message });
+
+    const extraDetails =
+      stderrLog.trim() ||
+      (err.stderr ? String(err.stderr).trim() : '') ||
+      (err.output ? String(err.output).trim() : '');
+
+    callbacks.onError({
+      jobId,
+      error: err.message,
+      details: extraDetails || undefined,
+    });
   });
 
   cmd.save(outputPath);

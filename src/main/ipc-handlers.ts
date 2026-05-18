@@ -1,4 +1,4 @@
-import { ipcMain, dialog, app, BrowserWindow } from 'electron';
+import { ipcMain, dialog, app, BrowserWindow, Menu, clipboard, shell } from 'electron';
 import Store from 'electron-store';
 import { probeFile, encodeFile, buildOutputPath, cancelJob, cancelAllJobs } from './ffmpeg-service';
 import {
@@ -171,6 +171,74 @@ export function registerIpcHandlers(): void {
     });
     return result.canceled ? null : result.filePaths[0];
   });
+
+  // Show a job-specific context menu
+  ipcMain.handle(
+    IPC.SHOW_JOB_CONTEXT_MENU,
+    async (event, jobId: string, jobStatus: string, filePath: string) => {
+      const win = BrowserWindow.fromWebContents(event.sender);
+      if (!win) return null;
+
+      let selectedAction: 'remove' | 'cancel' | 'copyPath' | 'reveal' | null = null;
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'Copy file path',
+          click: () => {
+            clipboard.writeText(filePath);
+            selectedAction = 'copyPath';
+          },
+        },
+        {
+          label: 'Reveal in Explorer',
+          click: () => {
+            shell.showItemInFolder(filePath);
+            selectedAction = 'reveal';
+          },
+        },
+        { type: 'separator' },
+        jobStatus === 'encoding'
+          ? {
+              label: 'Cancel encoding',
+              click: () => {
+                selectedAction = 'cancel';
+              },
+            }
+          : {
+              label: 'Remove from queue',
+              click: () => {
+                selectedAction = 'remove';
+              },
+            },
+      ]);
+
+      return new Promise<typeof selectedAction>((resolve) => {
+        menu.popup({
+          window: win,
+          callback: () => resolve(selectedAction),
+        });
+      });
+    }
+  );
+
+  // Show a message dialog with error details
+  ipcMain.handle(
+    IPC.DIALOG_SHOW_MESSAGE,
+    async (_event, title: string, message: string, detail?: string) => {
+      const result = await dialog.showMessageBox({
+        type: 'error',
+        title,
+        message,
+        detail: detail ?? '',
+        buttons: ['Copy error', 'OK'],
+        defaultId: 1,
+        cancelId: 1,
+      });
+
+      if (result.response === 0) {
+        clipboard.writeText(detail ? `${message}\n\n${detail}` : message);
+      }
+    }
+  );
 
   // Persistent store
   ipcMain.handle(IPC.STORE_GET, (_event, key: string) => store.get(key));

@@ -48,6 +48,14 @@ const api = {
 
   // App
   appVersion: (): Promise<string> => ipcRenderer.invoke(IPC.APP_VERSION),
+  showErrorDialog: (title: string, message: string, detail?: string): Promise<void> =>
+    ipcRenderer.invoke(IPC.DIALOG_SHOW_MESSAGE, title, message, detail),
+  showJobContextMenu: (
+    jobId: string,
+    jobStatus: string,
+    filePath: string
+  ): Promise<'remove' | 'cancel' | 'copyPath' | 'reveal' | null> =>
+    ipcRenderer.invoke(IPC.SHOW_JOB_CONTEXT_MENU, jobId, jobStatus, filePath),
 
   // Window controls
   windowMinimize: () => ipcRenderer.send('window:minimize'),

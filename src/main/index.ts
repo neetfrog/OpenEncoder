@@ -4,6 +4,9 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { registerIpcHandlers } from './ipc-handlers';
 import { setupErrorHandling } from './error-handler';
 
+// Disable GPU shader disk cache on Windows when cache folder permissions are restricted.
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+
 let mainWindow: BrowserWindow | null = null;
 
 function createWindow(): void {

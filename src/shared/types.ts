@@ -65,6 +65,7 @@ export interface EncodeJob {
   eta?: number; // seconds remaining
   timemark?: string;
   error?: string;
+  errorDetails?: string;
   mediaInfo?: MediaInfo;
   addedAt: number; // timestamp
   startedAt?: number;
@@ -83,6 +84,8 @@ export const IPC = {
   ENCODE_ERROR: 'encode:error',
   DIALOG_OPEN_FILES: 'dialog:openFiles',
   DIALOG_OPEN_FOLDER: 'dialog:openFolder',
+  DIALOG_SHOW_MESSAGE: 'dialog:showMessage',
+  SHOW_JOB_CONTEXT_MENU: 'contextMenu:job',
   STORE_GET: 'store:get',
   STORE_SET: 'store:set',
   APP_VERSION: 'app:version',
@@ -126,4 +129,5 @@ export interface EncodeCompletePayload {
 export interface EncodeErrorPayload {
   jobId: string;
   error: string;
+  details?: string;
 }

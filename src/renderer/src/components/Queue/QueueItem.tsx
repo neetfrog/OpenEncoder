@@ -33,22 +33,53 @@ function QueueItem({ job }: Props): JSX.Element {
     [job.id, removeJob]
   );
 
+  const cancelJob = useCallback(async () => {
+    await window.api.encodeCancel(job.id);
+    const store = useEncoderStore.getState();
+    store.setJobStatus(job.id, 'cancelled');
+    if (store.encodingJobs().length === 0) {
+      store.setIsEncoding(false);
+    }
+  }, [job.id]);
+
   const handleCancelJob = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      cancelJob();
+    },
+    [cancelJob]
+  );
+
+  const handleShowError = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
-      await window.api.encodeCancel(job.id);
-      const store = useEncoderStore.getState();
-      store.setJobStatus(job.id, 'cancelled');
-      if (store.encodingJobs().length === 0) {
-        store.setIsEncoding(false);
+      if (!job.error) return;
+      await window.api.showErrorDialog('Encoding error', job.error, job.errorDetails);
+    },
+    [job.error, job.errorDetails]
+  );
+
+  const handleContextMenu = useCallback(
+    async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      selectJob(job.id, e.ctrlKey || e.metaKey);
+
+      const action = await window.api.showJobContextMenu(job.id, job.status, job.inputPath);
+      if (action === 'cancel') {
+        await cancelJob();
+      }
+      if (action === 'remove') {
+        removeJob(job.id);
       }
     },
-    [job.id]
+    [cancelJob, job.id, job.inputPath, job.status, removeJob, selectJob]
   );
 
   return (
     <div
       onClick={(e) => selectJob(job.id, e.ctrlKey || e.metaKey)}
+      onContextMenu={handleContextMenu}
       className={`flex items-center gap-2 px-4 py-2.5 border-b border-[#21262d] cursor-pointer transition-colors group text-sm
         ${isSelected ? 'bg-indigo-500/10 border-l-2 border-l-indigo-500' : 'hover:bg-white/[0.02]'}
         ${job.status === 'error' ? 'bg-red-500/5' : ''}
@@ -180,7 +211,11 @@ function QueueItem({ job }: Props): JSX.Element {
         )}
         {job.status === 'done' && <div className="text-[10px] text-green-400">✓ Done</div>}
         {job.status === 'error' && (
-          <div className="text-[10px] text-red-400 truncate" title={job.error}>
+          <div
+            onClick={handleShowError}
+            className="text-[10px] text-red-400 truncate cursor-pointer hover:text-red-200"
+            title="Click to view full error"
+          >
             ✕ {job.error}
           </div>
         )}

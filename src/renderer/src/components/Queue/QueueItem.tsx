@@ -1,5 +1,5 @@
-import { memo, useCallback, useEffect, useRef } from 'react';
-import { X, AlertCircle, CheckCircle2, Clock, Loader2, ChevronDown } from 'lucide-react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { X, AlertCircle, CheckCircle2, Clock, Loader2, ChevronDown, Copy } from 'lucide-react';
 import type { EncodeJob } from '@shared/types';
 import { useEncoderStore } from '@renderer/store/useEncoderStore';
 import { clamp, formatBytes, formatDuration, formatEta, basename, getExtension } from '@renderer/utils';
@@ -34,6 +34,8 @@ function QueueItem({ job }: Props): JSX.Element {
         .catch(() => {});
     }
   }, [job.id, job.inputPath]);
+
+  const [isLogOpen, setIsLogOpen] = useState(false);
 
   const updateTrim = useCallback(
     (handle: 'start' | 'end', clientX: number) => {
@@ -93,19 +95,32 @@ function QueueItem({ job }: Props): JSX.Element {
     [cancelJob]
   );
 
+  const logTitle = job.status === 'error' ? 'Encoding error' : 'Job log';
+  const logMessage =
+    job.status === 'error'
+      ? job.error || 'An unknown encoding error occurred.'
+      : 'Encoding completed successfully.';
+  const logDetail = job.log || job.errorDetails || 'No log available.';
+
   const handleShowLog = useCallback(
-    async (e: React.MouseEvent) => {
+    (e: React.MouseEvent) => {
       e.stopPropagation();
-      const title = job.status === 'error' ? 'Encoding error' : 'Job log';
-      const message =
-        job.status === 'error'
-          ? job.error || 'An unknown encoding error occurred.'
-          : 'Encoding completed successfully.';
-      const detail = job.log || job.errorDetails || 'No log available.';
-      await window.api.showErrorDialog(title, message, detail);
+      setIsLogOpen(true);
     },
-    [job.error, job.errorDetails, job.log, job.status]
+    []
   );
+
+  const handleCopyLog = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(logDetail);
+    } catch {
+      // ignore clipboard failures
+    }
+  }, [logDetail]);
+
+  const handleCloseLog = useCallback(() => {
+    setIsLogOpen(false);
+  }, []);
 
   const handleContextMenu = useCallback(
     async (e: React.MouseEvent) => {
@@ -369,6 +384,38 @@ function QueueItem({ job }: Props): JSX.Element {
               <span>Start: {formatDuration(trimStart)}</span>
               <span>End: {formatDuration(trimEnd)}</span>
             </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {isLogOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+        <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-[#0b1118] shadow-2xl">
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-[#111827] px-5 py-4">
+            <div>
+              <div className="text-sm font-semibold text-[#e6edf3]">{logTitle}</div>
+              <div className="mt-1 text-xs text-[#8b949e]">{logMessage}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyLog}
+                className="flex items-center gap-1 rounded-lg bg-white/5 px-3 py-2 text-xs text-[#e6edf3] hover:bg-white/10 transition"
+              >
+                <Copy size={14} /> Copy
+              </button>
+              <button
+                type="button"
+                onClick={handleCloseLog}
+                className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 hover:bg-red-500/20 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+          <div className="max-h-[60vh] overflow-auto px-5 py-4 text-[12px] leading-6 text-[#c9d1d9]">
+            <pre className="whitespace-pre-wrap break-words font-mono text-[11px] text-[#c9d1d9]">{logDetail}</pre>
           </div>
         </div>
       </div>

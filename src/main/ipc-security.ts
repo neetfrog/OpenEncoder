@@ -62,7 +62,11 @@ export function validateEncodePayload(payload: EncodeStartPayload): void {
     }
 
     if (job.trimStart !== undefined) {
-      if (typeof job.trimStart !== 'number' || !Number.isFinite(job.trimStart) || job.trimStart < 0) {
+      if (
+        typeof job.trimStart !== 'number' ||
+        !Number.isFinite(job.trimStart) ||
+        job.trimStart < 0
+      ) {
         throw new Error(`Invalid job ${job.id}: trimStart must be a non-negative number`);
       }
     }

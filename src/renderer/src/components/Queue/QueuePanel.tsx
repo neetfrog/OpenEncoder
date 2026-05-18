@@ -43,7 +43,7 @@ export default function QueuePanel(): JSX.Element {
         trimStart: j.trimStart,
         trimEnd: j.trimEnd,
         hwAccel: j.preset.hwAccel ?? hwAccel,
-      }))
+      })),
     });
   }, [jobs, outputDir, hwAccel, setIsEncoding]);
 

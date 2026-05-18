@@ -67,7 +67,16 @@ function resolveFfprobePath(): string {
 ffmpeg.setFfmpegPath(resolveFfmpegPath());
 ffmpeg.setFfprobePath(resolveFfprobePath());
 
-const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.avif']);
+const imageExtensions = new Set([
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.gif',
+  '.webp',
+  '.bmp',
+  '.tiff',
+  '.avif',
+]);
 
 function isImageFile(filePath: string): boolean {
   return imageExtensions.has(parsePath(filePath).ext.toLowerCase());
@@ -170,7 +179,10 @@ export function buildOutputPath(inputPath: string, outputDir: string, preset: Pr
   return join(resolvedDir, `${name}_${preset.id}.${preset.container}`);
 }
 
-function resolveHardwareEncoder(videoCodec: string | undefined, hwAccel?: string): string | undefined {
+function resolveHardwareEncoder(
+  videoCodec: string | undefined,
+  hwAccel?: string
+): string | undefined {
   if (!videoCodec || !hwAccel || hwAccel === 'none' || hwAccel === 'auto') {
     return videoCodec;
   }
@@ -219,7 +231,10 @@ export function encodeFile(
   // ── Trim settings ───────────────────────────────────────────────────────────
   const startOffset = trimStart && trimStart > 0 ? trimStart : 0;
   const endOffset = trimEnd && trimEnd > startOffset ? trimEnd : undefined;
-  const effectiveDuration = endOffset !== undefined ? Math.max(0, endOffset - startOffset) : Math.max(0, duration - startOffset);
+  const effectiveDuration =
+    endOffset !== undefined
+      ? Math.max(0, endOffset - startOffset)
+      : Math.max(0, duration - startOffset);
 
   if (startOffset > 0) {
     cmd = cmd.seekInput(startOffset);
@@ -251,9 +266,7 @@ export function encodeFile(
         `-vf scale=${preset.width}:${preset.height}:force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2`,
       ]);
     } else if (preset.width) {
-      cmd = cmd.outputOptions([
-        `-vf scale=${preset.width}:-2,pad=ceil(iw/2)*2:ceil(ih/2)*2`,
-      ]);
+      cmd = cmd.outputOptions([`-vf scale=${preset.width}:-2,pad=ceil(iw/2)*2:ceil(ih/2)*2`]);
     }
 
     if (preset.fps) {

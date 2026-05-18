@@ -3,7 +3,8 @@ import { FolderOpen, Cpu, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { useEncoderStore } from '@renderer/store/useEncoderStore';
 
 export default function SettingsPanel(): JSX.Element {
-  const { outputDir, setOutputDir, concurrentJobs, setConcurrentJobs, hwAccel, setHwAccel } = useEncoderStore();
+  const { outputDir, setOutputDir, concurrentJobs, setConcurrentJobs, hwAccel, setHwAccel } =
+    useEncoderStore();
   const [appVersion, setAppVersion] = useState('');
   const [platform, setPlatform] = useState('');
   const [showAbout, setShowAbout] = useState(false);
@@ -118,7 +119,8 @@ export default function SettingsPanel(): JSX.Element {
                 Preferred backend
               </label>
               <p className="text-xs text-[#8b949e] mb-3">
-                Use a supported hardware encoder if available. Leave on auto to keep software compatibility.
+                Use a supported hardware encoder if available. Leave on auto to keep software
+                compatibility.
               </p>
               <div className="flex flex-wrap gap-2">
                 {(['auto', 'none', 'nvenc', 'qsv', 'amf'] as const).map((mode) => (

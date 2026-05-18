@@ -62,7 +62,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-artifacts
-          path: dist-electron/**/*.{exe,msi}
+          path: |
+            dist-electron/*.exe
+            dist-electron/*.msi
           if-no-files-found: warn
 
   create-release:

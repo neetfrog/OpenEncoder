@@ -71,7 +71,7 @@ async function generateThumbnail(filePath) {
   if (isImageFile(filePath)) {
     return url.pathToFileURL(filePath).href;
   }
-  const fileName = `mediaforge-thumb-${crypto.randomUUID()}.png`;
+  const fileName = `openencoder-thumb-${crypto.randomUUID()}.png`;
   const outputPath = path.join(os.tmpdir(), fileName);
   return new Promise((resolve) => {
     ffmpeg(filePath).seekInput(1).outputOptions(["-frames:v 1"]).size("240x?").output(outputPath).on("end", async () => {
@@ -615,7 +615,7 @@ function createWindow() {
   }
 }
 electron.app.whenReady().then(() => {
-  utils.electronApp.setAppUserModelId("com.mediaforge.app");
+  utils.electronApp.setAppUserModelId("com.openencoder.app");
   setupErrorHandling();
   electron.app.on("browser-window-created", (_, window) => {
     utils.optimizer.watchWindowShortcuts(window);

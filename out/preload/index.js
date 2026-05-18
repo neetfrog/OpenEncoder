@@ -47,6 +47,7 @@ const api = {
   storeSet: (key, value) => electron.ipcRenderer.invoke(IPC.STORE_SET, key, value),
   // App
   appVersion: () => electron.ipcRenderer.invoke(IPC.APP_VERSION),
+  platform: () => Promise.resolve(process.platform),
   showErrorDialog: (title, message, detail) => electron.ipcRenderer.invoke(IPC.DIALOG_SHOW_MESSAGE, title, message, detail),
   showJobContextMenu: (jobId, jobStatus, filePath) => electron.ipcRenderer.invoke(IPC.SHOW_JOB_CONTEXT_MENU, jobId, jobStatus, filePath),
   // Window controls

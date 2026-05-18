@@ -1,15 +1,17 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FolderOpen, Cpu, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { useEncoderStore } from '@renderer/store/useEncoderStore';
 
 export default function SettingsPanel(): JSX.Element {
   const { outputDir, setOutputDir, concurrentJobs, setConcurrentJobs } = useEncoderStore();
   const [appVersion, setAppVersion] = useState('');
+  const [platform, setPlatform] = useState('');
   const [showAbout, setShowAbout] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
     window.api.appVersion().then(setAppVersion);
-  });
+    window.api.platform().then(setPlatform);
+  }, []);
 
   const handleChooseOutput = useCallback(async () => {
     const dir = await window.api.openFolder();
@@ -138,7 +140,7 @@ export default function SettingsPanel(): JSX.Element {
                 {[
                   ['Engine', 'FFmpeg'],
                   ['UI', 'Electron + React'],
-                  ['Platform', process.platform],
+                  ['Platform', platform || 'Unknown'],
                   ['License', 'MIT'],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between py-1 border-b border-[#21262d]">

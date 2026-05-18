@@ -48,6 +48,7 @@ const api = {
 
   // App
   appVersion: (): Promise<string> => ipcRenderer.invoke(IPC.APP_VERSION),
+  platform: (): Promise<string> => Promise.resolve(process.platform),
   showErrorDialog: (title: string, message: string, detail?: string): Promise<void> =>
     ipcRenderer.invoke(IPC.DIALOG_SHOW_MESSAGE, title, message, detail),
   showJobContextMenu: (

@@ -54,7 +54,16 @@ function resolveFfprobePath() {
 }
 ffmpeg.setFfmpegPath(resolveFfmpegPath());
 ffmpeg.setFfprobePath(resolveFfprobePath());
-const imageExtensions = /* @__PURE__ */ new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff", ".avif"]);
+const imageExtensions = /* @__PURE__ */ new Set([
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+  ".bmp",
+  ".tiff",
+  ".avif"
+]);
 function isImageFile(filePath) {
   return imageExtensions.has(path.parse(filePath).ext.toLowerCase());
 }
@@ -167,9 +176,7 @@ function encodeFile(jobId, inputPath, outputPath, preset, duration, trimStart, t
         `-vf scale=${preset.width}:${preset.height}:force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2`
       ]);
     } else if (preset.width) {
-      cmd = cmd.outputOptions([
-        `-vf scale=${preset.width}:-2,pad=ceil(iw/2)*2:ceil(ih/2)*2`
-      ]);
+      cmd = cmd.outputOptions([`-vf scale=${preset.width}:-2,pad=ceil(iw/2)*2:ceil(ih/2)*2`]);
     }
     if (preset.fps) {
       cmd = cmd.fps(preset.fps);

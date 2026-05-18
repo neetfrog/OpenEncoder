@@ -28,6 +28,7 @@ module.exports = {
       tsconfig: {
         module: 'commonjs',
         target: 'ES2022',
+        jsx: 'react-jsx',
         resolveJsonModule: true,
         esModuleInterop: true,
         allowSyntheticDefaultImports: true,

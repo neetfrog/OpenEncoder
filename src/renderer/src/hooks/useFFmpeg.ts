@@ -34,6 +34,7 @@ export function useFFmpegEvents(): void {
         progress: 100,
         outputPath: payload.outputPath,
         finishedAt: Date.now(),
+        log: payload.log,
       });
       stopEncodingIfIdle();
     });
@@ -42,6 +43,7 @@ export function useFFmpegEvents(): void {
       store.setJobStatus(payload.jobId, 'error', {
         error: payload.error,
         errorDetails: payload.details,
+        log: payload.log,
       });
       stopEncodingIfIdle();
     });

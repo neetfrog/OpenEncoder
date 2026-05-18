@@ -30,6 +30,9 @@ interface QueuedJob {
   presetId: string;
   preset: import('../shared/types').Preset;
   duration: number;
+  trimStart?: number;
+  trimEnd?: number;
+  hwAccel?: import('../shared/types').HardwareAcceleration;
 }
 
 const pendingQueue: QueuedJob[] = [];
@@ -46,19 +49,29 @@ function drainQueue(win: BrowserWindow): void {
 
     const outputPath = buildOutputPath(job.inputPath, job.outputDir, job.preset);
 
-    encodeFile(job.id, job.inputPath, outputPath, job.preset, job.duration, {
-      onProgress: (payload) => win.webContents.send(IPC.ENCODE_PROGRESS, payload),
-      onComplete: (payload) => {
-        activeCount--;
-        win.webContents.send(IPC.ENCODE_COMPLETE, payload);
-        drainQueue(win);
-      },
-      onError: (payload) => {
-        activeCount--;
-        win.webContents.send(IPC.ENCODE_ERROR, payload);
-        drainQueue(win);
-      },
-    });
+    encodeFile(
+      job.id,
+      job.inputPath,
+      outputPath,
+      job.preset,
+      job.duration,
+      job.trimStart,
+      job.trimEnd,
+      job.hwAccel,
+      {
+        onProgress: (payload) => win.webContents.send(IPC.ENCODE_PROGRESS, payload),
+        onComplete: (payload) => {
+          activeCount--;
+          win.webContents.send(IPC.ENCODE_COMPLETE, payload);
+          drainQueue(win);
+        },
+        onError: (payload) => {
+          activeCount--;
+          win.webContents.send(IPC.ENCODE_ERROR, payload);
+          drainQueue(win);
+        },
+      }
+    );
   }
 }
 
@@ -98,6 +111,9 @@ export function registerIpcHandlers(): void {
           presetId: job.preset.id,
           preset: job.preset,
           duration,
+          trimStart: job.trimStart,
+          trimEnd: job.trimEnd,
+          hwAccel: job.hwAccel,
         });
       }
 

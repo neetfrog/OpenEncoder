@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { BUILT_IN_PRESETS } from '@shared/presets';
-import type { EncodeJob, Preset, MediaInfo } from '@shared/types';
+import type { EncodeJob, Preset, MediaInfo, HardwareAcceleration } from '@shared/types';
 import { v4 as uuid } from '../utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -17,6 +17,7 @@ interface EncoderState {
   // Settings
   outputDir: string;
   concurrentJobs: number;
+  hwAccel: HardwareAcceleration;
   isEncoding: boolean;
 
   // UI
@@ -42,6 +43,7 @@ interface EncoderState {
   setJobStatus: (id: string, status: EncodeJob['status'], extra?: Partial<EncodeJob>) => void;
   setJobPreset: (id: string, preset: Preset) => void;
   setJobOutputDir: (id: string, dir: string) => void;
+  setJobTrimRange: (id: string, trimStart: number, trimEnd?: number) => void;
 
   // Actions — Presets
   setActivePreset: (preset: Preset) => void;
@@ -51,6 +53,7 @@ interface EncoderState {
   // Actions — Settings
   setOutputDir: (dir: string) => void;
   setConcurrentJobs: (n: number) => void;
+  setHwAccel: (hwAccel: HardwareAcceleration) => void;
 
   // Actions — UI
   setActiveTab: (tab: EncoderState['activeTab']) => void;
@@ -72,6 +75,7 @@ export const useEncoderStore = create<EncoderState>((set, get) => ({
   activePreset: BUILT_IN_PRESETS[0],
   outputDir: '',
   concurrentJobs: 2,
+  hwAccel: 'auto',
   isEncoding: false,
   activeTab: 'queue',
   showSettings: false,
@@ -161,6 +165,19 @@ export const useEncoderStore = create<EncoderState>((set, get) => ({
       jobs: state.jobs.map((j) => (j.id === id ? { ...j, outputDir: dir } : j)),
     })),
 
+  setJobTrimRange: (id, trimStart, trimEnd) =>
+    set((state) => ({
+      jobs: state.jobs.map((j) =>
+        j.id === id
+          ? {
+              ...j,
+              trimStart,
+              trimEnd: typeof trimEnd === 'number' && trimEnd > trimStart ? trimEnd : undefined,
+            }
+          : j
+      ),
+    })),
+
   // ─── Presets ──────────────────────────────────────────────────────────────
 
   setActivePreset: (preset) => set({ activePreset: preset }),
@@ -183,6 +200,11 @@ export const useEncoderStore = create<EncoderState>((set, get) => ({
     window.api.storeSet('concurrentJobs', n);
   },
 
+  setHwAccel: (hwAccel) => {
+    set({ hwAccel });
+    window.api.storeSet('hwAccel', hwAccel);
+  },
+
   // ─── UI ───────────────────────────────────────────────────────────────────
 
   setActiveTab: (tab) => set({ activeTab: tab }),
@@ -200,10 +222,12 @@ export const useEncoderStore = create<EncoderState>((set, get) => ({
 
 export async function loadPersistedSettings(): Promise<void> {
   const store = useEncoderStore.getState();
-  const [outputDir, concurrentJobs] = await Promise.all([
+  const [outputDir, concurrentJobs, hwAccel] = await Promise.all([
     window.api.storeGet('outputDir') as Promise<string>,
     window.api.storeGet('concurrentJobs') as Promise<number>,
+    window.api.storeGet('hwAccel') as Promise<HardwareAcceleration>,
   ]);
   if (outputDir) store.setOutputDir(outputDir);
   if (concurrentJobs) store.setConcurrentJobs(concurrentJobs);
+  if (hwAccel) store.setHwAccel(hwAccel);
 }

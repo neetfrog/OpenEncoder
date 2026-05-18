@@ -1,8 +1,8 @@
-import { memo, useCallback, useEffect } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { X, AlertCircle, CheckCircle2, Clock, Loader2, ChevronDown } from 'lucide-react';
 import type { EncodeJob } from '@shared/types';
 import { useEncoderStore } from '@renderer/store/useEncoderStore';
-import { formatBytes, formatDuration, formatEta, basename, getExtension } from '@renderer/utils';
+import { clamp, formatBytes, formatDuration, formatEta, basename, getExtension } from '@renderer/utils';
 import { BUILT_IN_PRESETS } from '@shared/presets';
 
 interface Props {
@@ -10,10 +10,20 @@ interface Props {
 }
 
 function QueueItem({ job }: Props): JSX.Element {
-  const { removeJob, setJobPreset, selectedJobIds, selectJob, setJobMediaInfo } = useEncoderStore();
+  const { removeJob, setJobPreset, selectedJobIds, selectJob, setJobMediaInfo, setJobTrimRange } = useEncoderStore();
   const isSelected = selectedJobIds.has(job.id);
   const fileName = basename(job.inputPath);
   const ext = getExtension(job.inputPath);
+  const trimStart = job.trimStart ?? 0;
+  const trimEnd = job.trimEnd ?? job.mediaInfo?.duration ?? 0;
+  const maxDuration = job.mediaInfo?.duration ?? 0;
+  const isVideo = Boolean(job.mediaInfo?.width && job.mediaInfo?.height);
+  const fileUrl = `file://${job.inputPath.replace(/\\/g, '/')}`;
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const activeHandle = useRef<'start' | 'end' | null>(null);
+
+  const startPercent = maxDuration > 0 ? clamp((trimStart / maxDuration) * 100, 0, 100) : 0;
+  const endPercent = maxDuration > 0 ? clamp((trimEnd / maxDuration) * 100, 0, 100) : 100;
 
   // Probe on mount
   useEffect(() => {
@@ -24,6 +34,39 @@ function QueueItem({ job }: Props): JSX.Element {
         .catch(() => {});
     }
   }, [job.id, job.inputPath]);
+
+  const updateTrim = useCallback(
+    (handle: 'start' | 'end', clientX: number) => {
+      if (!sliderRef.current || maxDuration <= 0) return;
+      const rect = sliderRef.current.getBoundingClientRect();
+      const pct = clamp((clientX - rect.left) / rect.width, 0, 1);
+      const value = Number((pct * maxDuration).toFixed(1));
+      if (handle === 'start') {
+        const nextStart = Math.min(value, trimEnd - 0.1);
+        setJobTrimRange(job.id, clamp(nextStart, 0, maxDuration), trimEnd);
+      } else {
+        const nextEnd = Math.max(value, trimStart + 0.1);
+        setJobTrimRange(job.id, trimStart, clamp(nextEnd, 0, maxDuration));
+      }
+    },
+    [job.id, maxDuration, setJobTrimRange, trimEnd, trimStart]
+  );
+
+  useEffect(() => {
+    const handleMove = (event: PointerEvent) => {
+      if (!activeHandle.current) return;
+      updateTrim(activeHandle.current, event.clientX);
+    };
+    const handleUp = () => {
+      activeHandle.current = null;
+    };
+    document.addEventListener('pointermove', handleMove);
+    document.addEventListener('pointerup', handleUp);
+    return () => {
+      document.removeEventListener('pointermove', handleMove);
+      document.removeEventListener('pointerup', handleUp);
+    };
+  }, [updateTrim]);
 
   const handleRemove = useCallback(
     (e: React.MouseEvent) => {
@@ -50,13 +93,18 @@ function QueueItem({ job }: Props): JSX.Element {
     [cancelJob]
   );
 
-  const handleShowError = useCallback(
+  const handleShowLog = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (!job.error) return;
-      await window.api.showErrorDialog('Encoding error', job.error, job.errorDetails);
+      const title = job.status === 'error' ? 'Encoding error' : 'Job log';
+      const message =
+        job.status === 'error'
+          ? job.error || 'An unknown encoding error occurred.'
+          : 'Encoding completed successfully.';
+      const detail = job.log || job.errorDetails || 'No log available.';
+      await window.api.showErrorDialog(title, message, detail);
     },
-    [job.error, job.errorDetails]
+    [job.error, job.errorDetails, job.log, job.status]
   );
 
   const handleContextMenu = useCallback(
@@ -76,10 +124,13 @@ function QueueItem({ job }: Props): JSX.Element {
     [cancelJob, job.id, job.inputPath, job.status, removeJob, selectJob]
   );
 
+  const resetTrim = () => setJobTrimRange(job.id, 0, undefined);
+
   return (
-    <div
-      onClick={(e) => selectJob(job.id, e.ctrlKey || e.metaKey)}
-      onContextMenu={handleContextMenu}
+    <>
+      <div
+        onClick={(e) => selectJob(job.id, e.ctrlKey || e.metaKey)}
+        onContextMenu={handleContextMenu}
       className={`flex items-center gap-2 px-4 py-2.5 border-b border-[#21262d] cursor-pointer transition-colors group text-sm
         ${isSelected ? 'bg-indigo-500/10 border-l-2 border-l-indigo-500' : 'hover:bg-white/[0.02]'}
         ${job.status === 'error' ? 'bg-red-500/5' : ''}
@@ -87,8 +138,17 @@ function QueueItem({ job }: Props): JSX.Element {
       `}
     >
       {/* File preview */}
-      <div className="w-12 h-12 shrink-0 overflow-hidden rounded-md bg-[#161b22] border border-[#21262d] flex items-center justify-center">
-        {job.mediaInfo?.thumbnail ? (
+      <div className="w-14 h-14 shrink-0 overflow-hidden rounded-md bg-[#161b22] border border-[#21262d] flex items-center justify-center">
+        {isVideo ? (
+          <video
+            src={fileUrl}
+            poster={job.mediaInfo?.thumbnail}
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+          />
+        ) : job.mediaInfo?.thumbnail ? (
           <img
             src={job.mediaInfo.thumbnail}
             alt={fileName}
@@ -209,15 +269,23 @@ function QueueItem({ job }: Props): JSX.Element {
             )}
           </div>
         )}
-        {job.status === 'done' && <div className="text-[10px] text-green-400">✓ Done</div>}
+        {job.status === 'done' && (
+          <button
+            onClick={handleShowLog}
+            className="text-[10px] text-green-400 truncate cursor-pointer hover:text-green-200"
+            title="Click to view encoding log"
+          >
+            ✓ Done
+          </button>
+        )}
         {job.status === 'error' && (
-          <div
-            onClick={handleShowError}
+          <button
+            onClick={handleShowLog}
             className="text-[10px] text-red-400 truncate cursor-pointer hover:text-red-200"
-            title="Click to view full error"
+            title="Click to view full error log"
           >
             ✕ {job.error}
-          </div>
+          </button>
         )}
         {job.status === 'cancelled' && <div className="text-[10px] text-[#8b949e]">Cancelled</div>}
         {job.status === 'pending' && <div className="text-[10px] text-[#484f58]">Waiting</div>}
@@ -255,7 +323,58 @@ function QueueItem({ job }: Props): JSX.Element {
         )}
       </div>
     </div>
-  );
+    {job.mediaInfo && job.status !== 'encoding' && (
+      <div className="flex items-center gap-2 px-4 py-3 bg-[#0b1016] border-b border-[#21262d] text-[11px] text-[#8b949e]">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-3 mb-2 text-[10px] uppercase tracking-[0.18em] text-[#6e7681]">
+            <span>Trim export range</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                resetTrim();
+              }}
+              className="text-[#8b949e] hover:text-[#e6edf3]"
+            >
+              Reset
+            </button>
+          </div>
+          <div className="space-y-2">
+            <div ref={sliderRef} className="relative h-10 select-none">
+              <div className="absolute inset-x-0 top-1/2 h-1 bg-[#21262d] rounded-full -translate-y-1/2" />
+              <div
+                className="absolute top-1/2 h-1 bg-indigo-500 rounded-full -translate-y-1/2"
+                style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }}
+              />
+              <div
+                className="absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border border-white/10 bg-indigo-400 shadow-lg cursor-grab"
+                style={{ left: `calc(${startPercent}% - 0.5rem)` }}
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                  activeHandle.current = 'start';
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                }}
+              />
+              <div
+                className="absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border border-white/10 bg-indigo-400 shadow-lg cursor-grab"
+                style={{ left: `calc(${endPercent}% - 0.5rem)` }}
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                  activeHandle.current = 'end';
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                }}
+              />
+            </div>
+            <div className="flex justify-between text-[10px] text-[#c9d1d9]">
+              <span>Start: {formatDuration(trimStart)}</span>
+              <span>End: {formatDuration(trimEnd)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </>
+);
 }
 
 export default memo(QueueItem);

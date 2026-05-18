@@ -120,11 +120,40 @@ function buildOutputPath(inputPath, outputDir, preset) {
   const resolvedDir = outputDir || path.dirname(inputPath);
   return path.join(resolvedDir, `${name}_${preset.id}.${preset.container}`);
 }
-function encodeFile(jobId, inputPath, outputPath, preset, duration, callbacks) {
+function resolveHardwareEncoder(videoCodec, hwAccel) {
+  if (!videoCodec || !hwAccel || hwAccel === "none" || hwAccel === "auto") {
+    return videoCodec;
+  }
+  const normalized = videoCodec.toLowerCase();
+  if (hwAccel === "nvenc") {
+    if (normalized.includes("264")) return "h264_nvenc";
+    if (normalized.includes("265") || normalized.includes("hevc")) return "hevc_nvenc";
+  }
+  if (hwAccel === "qsv") {
+    if (normalized.includes("264")) return "h264_qsv";
+    if (normalized.includes("265") || normalized.includes("hevc")) return "hevc_qsv";
+  }
+  if (hwAccel === "amf") {
+    if (normalized.includes("264")) return "h264_amf";
+    if (normalized.includes("265") || normalized.includes("hevc")) return "hevc_amf";
+  }
+  return videoCodec;
+}
+function encodeFile(jobId, inputPath, outputPath, preset, duration, trimStart, trimEnd, hwAccel, callbacks) {
   let cmd = ffmpeg(inputPath);
-  if (preset.videoCodec) {
-    cmd = cmd.videoCodec(preset.videoCodec);
-    if (preset.crf !== void 0 && preset.videoCodec !== "gif") {
+  const encoderCodec = resolveHardwareEncoder(preset.videoCodec, hwAccel ?? preset.hwAccel);
+  const startOffset = trimStart && trimStart > 0 ? trimStart : 0;
+  const endOffset = trimEnd && trimEnd > startOffset ? trimEnd : void 0;
+  const effectiveDuration = endOffset !== void 0 ? Math.max(0, endOffset - startOffset) : Math.max(0, duration - startOffset);
+  if (startOffset > 0) {
+    cmd = cmd.seekInput(startOffset);
+  }
+  if (effectiveDuration > 0 && (startOffset > 0 || endOffset !== void 0)) {
+    cmd = cmd.duration(effectiveDuration);
+  }
+  if (encoderCodec) {
+    cmd = cmd.videoCodec(encoderCodec);
+    if (preset.crf !== void 0 && encoderCodec !== "gif") {
       cmd = cmd.outputOptions([`-crf ${preset.crf}`]);
     }
     if (preset.videoBitrate && preset.videoBitrate !== "0") {
@@ -153,7 +182,7 @@ function encodeFile(jobId, inputPath, outputPath, preset, duration, callbacks) {
     if (preset.audioBitrate) cmd = cmd.audioBitrate(preset.audioBitrate);
     if (preset.audioSampleRate) cmd = cmd.audioFrequency(preset.audioSampleRate);
     if (preset.audioChannels) cmd = cmd.audioChannels(preset.audioChannels);
-  } else if (!preset.videoCodec) {
+  } else if (!encoderCodec) {
     cmd = cmd.noAudio();
   }
   if (preset.extraArgs && preset.extraArgs.length > 0) {
@@ -168,14 +197,15 @@ function encodeFile(jobId, inputPath, outputPath, preset, duration, callbacks) {
   });
   const startTime = Date.now();
   cmd.on("progress", (progress) => {
+    const trackDuration = effectiveDuration > 0 ? effectiveDuration : duration;
     let percent = progress.percent ?? 0;
-    if ((percent <= 0 || percent > 100) && progress.timemark && duration > 0) {
+    if ((percent <= 0 || percent > 100) && progress.timemark && trackDuration > 0) {
       const parts = progress.timemark.split(":").map(Number);
       const secs = parts[0] * 3600 + parts[1] * 60 + parts[2];
-      percent = Math.min(100, secs / duration * 100);
+      percent = Math.min(100, secs / trackDuration * 100);
     }
     const elapsed = (Date.now() - startTime) / 1e3;
-    const remaining = duration > 0 && percent > 0 && elapsed > 0 ? Math.round((100 - percent) / percent * elapsed) : 0;
+    const remaining = trackDuration > 0 && percent > 0 && elapsed > 0 ? Math.round((100 - percent) / percent * elapsed) : 0;
     callbacks.onProgress({
       jobId,
       percent: Math.round(percent * 10) / 10,
@@ -187,7 +217,7 @@ function encodeFile(jobId, inputPath, outputPath, preset, duration, callbacks) {
   });
   cmd.on("end", () => {
     activeJobs.delete(jobId);
-    callbacks.onComplete({ jobId, outputPath });
+    callbacks.onComplete({ jobId, outputPath, log: stderrLog.trim() || void 0 });
   });
   cmd.on("error", (err) => {
     activeJobs.delete(jobId);
@@ -198,7 +228,8 @@ function encodeFile(jobId, inputPath, outputPath, preset, duration, callbacks) {
     callbacks.onError({
       jobId,
       error: err.message,
-      details: extraDetails || void 0
+      details: extraDetails || void 0,
+      log: stderrLog.trim() || void 0
     });
   });
   cmd.save(outputPath);
@@ -226,6 +257,15 @@ function validateFilePath(filePath) {
     return false;
   }
 }
+function validateDirPath(dirPath) {
+  if (!dirPath || typeof dirPath !== "string") return false;
+  if (dirPath.includes("..")) return false;
+  try {
+    return fs.existsSync(dirPath);
+  } catch {
+    return false;
+  }
+}
 function sanitizePathForLogging(filePath) {
   return filePath.split(/[\\/]/).pop() || "unknown";
 }
@@ -245,6 +285,11 @@ function validateFilePathForEncoding(filePath) {
     throw new Error(`Invalid file path: ${sanitizePathForLogging(filePath)}`);
   }
 }
+function validateOutputDirectory(dirPath) {
+  if (dirPath && !validateDirPath(dirPath)) {
+    throw new Error(`Invalid output directory: ${sanitizePathForLogging(dirPath)}`);
+  }
+}
 function validateEncodePayload(payload) {
   if (!Array.isArray(payload.jobs) || payload.jobs.length === 0) {
     throw new Error("Invalid encode payload: empty jobs array");
@@ -257,6 +302,30 @@ function validateEncodePayload(payload) {
       throw new Error(`Invalid job ${job.id}: missing or invalid inputPath`);
     }
     validateFilePathForEncoding(job.inputPath);
+    if (job.outputDir !== void 0 && typeof job.outputDir !== "string") {
+      throw new Error(`Invalid job ${job.id}: outputDir must be a string`);
+    }
+    if (job.outputDir) {
+      validateOutputDirectory(job.outputDir);
+    }
+    if (job.trimStart !== void 0) {
+      if (typeof job.trimStart !== "number" || !Number.isFinite(job.trimStart) || job.trimStart < 0) {
+        throw new Error(`Invalid job ${job.id}: trimStart must be a non-negative number`);
+      }
+    }
+    if (job.trimEnd !== void 0) {
+      if (typeof job.trimEnd !== "number" || !Number.isFinite(job.trimEnd) || job.trimEnd <= 0) {
+        throw new Error(`Invalid job ${job.id}: trimEnd must be a positive number`);
+      }
+      if (job.trimStart !== void 0 && job.trimEnd <= job.trimStart) {
+        throw new Error(`Invalid job ${job.id}: trimEnd must be greater than trimStart`);
+      }
+    }
+    if (job.hwAccel !== void 0) {
+      if (job.hwAccel !== "auto" && job.hwAccel !== "none" && job.hwAccel !== "nvenc" && job.hwAccel !== "qsv" && job.hwAccel !== "amf") {
+        throw new Error(`Invalid job ${job.id}: unknown hwAccel value`);
+      }
+    }
   }
 }
 const IPC = {
@@ -294,19 +363,29 @@ function drainQueue(win) {
     const job = pendingQueue.shift();
     activeCount++;
     const outputPath = buildOutputPath(job.inputPath, job.outputDir, job.preset);
-    encodeFile(job.id, job.inputPath, outputPath, job.preset, job.duration, {
-      onProgress: (payload) => win.webContents.send(IPC.ENCODE_PROGRESS, payload),
-      onComplete: (payload) => {
-        activeCount--;
-        win.webContents.send(IPC.ENCODE_COMPLETE, payload);
-        drainQueue(win);
-      },
-      onError: (payload) => {
-        activeCount--;
-        win.webContents.send(IPC.ENCODE_ERROR, payload);
-        drainQueue(win);
+    encodeFile(
+      job.id,
+      job.inputPath,
+      outputPath,
+      job.preset,
+      job.duration,
+      job.trimStart,
+      job.trimEnd,
+      job.hwAccel,
+      {
+        onProgress: (payload) => win.webContents.send(IPC.ENCODE_PROGRESS, payload),
+        onComplete: (payload) => {
+          activeCount--;
+          win.webContents.send(IPC.ENCODE_COMPLETE, payload);
+          drainQueue(win);
+        },
+        onError: (payload) => {
+          activeCount--;
+          win.webContents.send(IPC.ENCODE_ERROR, payload);
+          drainQueue(win);
+        }
       }
-    });
+    );
   }
 }
 function registerIpcHandlers() {
@@ -336,7 +415,10 @@ function registerIpcHandlers() {
           outputDir: job.outputDir,
           presetId: job.preset.id,
           preset: job.preset,
-          duration
+          duration,
+          trimStart: job.trimStart,
+          trimEnd: job.trimEnd,
+          hwAccel: job.hwAccel
         });
       }
       drainQueue(win);

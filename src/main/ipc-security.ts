@@ -53,5 +53,39 @@ export function validateEncodePayload(payload: EncodeStartPayload): void {
       throw new Error(`Invalid job ${job.id}: missing or invalid inputPath`);
     }
     validateFilePathForEncoding(job.inputPath);
+
+    if (job.outputDir !== undefined && typeof job.outputDir !== 'string') {
+      throw new Error(`Invalid job ${job.id}: outputDir must be a string`);
+    }
+    if (job.outputDir) {
+      validateOutputDirectory(job.outputDir);
+    }
+
+    if (job.trimStart !== undefined) {
+      if (typeof job.trimStart !== 'number' || !Number.isFinite(job.trimStart) || job.trimStart < 0) {
+        throw new Error(`Invalid job ${job.id}: trimStart must be a non-negative number`);
+      }
+    }
+
+    if (job.trimEnd !== undefined) {
+      if (typeof job.trimEnd !== 'number' || !Number.isFinite(job.trimEnd) || job.trimEnd <= 0) {
+        throw new Error(`Invalid job ${job.id}: trimEnd must be a positive number`);
+      }
+      if (job.trimStart !== undefined && job.trimEnd <= job.trimStart) {
+        throw new Error(`Invalid job ${job.id}: trimEnd must be greater than trimStart`);
+      }
+    }
+
+    if (job.hwAccel !== undefined) {
+      if (
+        job.hwAccel !== 'auto' &&
+        job.hwAccel !== 'none' &&
+        job.hwAccel !== 'nvenc' &&
+        job.hwAccel !== 'qsv' &&
+        job.hwAccel !== 'amf'
+      ) {
+        throw new Error(`Invalid job ${job.id}: unknown hwAccel value`);
+      }
+    }
   }
 }

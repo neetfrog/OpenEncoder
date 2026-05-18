@@ -1,5 +1,7 @@
 // ─── Media Info ───────────────────────────────────────────────────────────────
 
+export type HardwareAcceleration = 'auto' | 'none' | 'nvenc' | 'qsv' | 'amf';
+
 export interface MediaInfo {
   path: string;
   fileName: string;
@@ -16,7 +18,9 @@ export interface MediaInfo {
   audioBitrate?: number;
   audioCodec?: string;
   audioChannels?: number;
-  audioSampleRate?: number;  thumbnail?: string;}
+  audioSampleRate?: number;
+  thumbnail?: string;
+}
 
 // ─── Presets ──────────────────────────────────────────────────────────────────
 
@@ -38,6 +42,7 @@ export interface Preset {
   height?: number;
   fps?: number;
   preset?: string; // ffmpeg preset (ultrafast, fast, medium, slow, etc.)
+  hwAccel?: HardwareAcceleration;
   // Audio
   audioCodec?: string;
   audioBitrate?: string;
@@ -66,7 +71,10 @@ export interface EncodeJob {
   timemark?: string;
   error?: string;
   errorDetails?: string;
+  log?: string;
   mediaInfo?: MediaInfo;
+  trimStart?: number;
+  trimEnd?: number;
   addedAt: number; // timestamp
   startedAt?: number;
   finishedAt?: number;
@@ -98,6 +106,7 @@ export interface AppSettings {
   concurrentJobs: number;
   theme: 'dark' | 'darker';
   autoStart: boolean;
+  hwAccel: HardwareAcceleration;
   customPresets: Preset[];
 }
 
@@ -109,6 +118,9 @@ export interface EncodeStartPayload {
     inputPath: string;
     outputDir: string;
     preset: Preset;
+    trimStart?: number;
+    trimEnd?: number;
+    hwAccel?: HardwareAcceleration;
   }>;
 }
 
@@ -124,10 +136,12 @@ export interface EncodeProgressPayload {
 export interface EncodeCompletePayload {
   jobId: string;
   outputPath: string;
+  log?: string;
 }
 
 export interface EncodeErrorPayload {
   jobId: string;
   error: string;
   details?: string;
+  log?: string;
 }

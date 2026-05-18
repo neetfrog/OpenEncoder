@@ -170,6 +170,30 @@ export function buildOutputPath(inputPath: string, outputDir: string, preset: Pr
   return join(resolvedDir, `${name}_${preset.id}.${preset.container}`);
 }
 
+function resolveHardwareEncoder(videoCodec: string | undefined, hwAccel?: string): string | undefined {
+  if (!videoCodec || !hwAccel || hwAccel === 'none' || hwAccel === 'auto') {
+    return videoCodec;
+  }
+
+  const normalized = videoCodec.toLowerCase();
+  if (hwAccel === 'nvenc') {
+    if (normalized.includes('264')) return 'h264_nvenc';
+    if (normalized.includes('265') || normalized.includes('hevc')) return 'hevc_nvenc';
+  }
+
+  if (hwAccel === 'qsv') {
+    if (normalized.includes('264')) return 'h264_qsv';
+    if (normalized.includes('265') || normalized.includes('hevc')) return 'hevc_qsv';
+  }
+
+  if (hwAccel === 'amf') {
+    if (normalized.includes('264')) return 'h264_amf';
+    if (normalized.includes('265') || normalized.includes('hevc')) return 'hevc_amf';
+  }
+
+  return videoCodec;
+}
+
 // ─── Encode ───────────────────────────────────────────────────────────────────
 
 export interface EncodeCallbacks {
@@ -184,15 +208,32 @@ export function encodeFile(
   outputPath: string,
   preset: Preset,
   duration: number,
+  trimStart: number | undefined,
+  trimEnd: number | undefined,
+  hwAccel: string | undefined,
   callbacks: EncodeCallbacks
 ): void {
   let cmd = ffmpeg(inputPath);
+  const encoderCodec = resolveHardwareEncoder(preset.videoCodec, hwAccel ?? preset.hwAccel);
+
+  // ── Trim settings ───────────────────────────────────────────────────────────
+  const startOffset = trimStart && trimStart > 0 ? trimStart : 0;
+  const endOffset = trimEnd && trimEnd > startOffset ? trimEnd : undefined;
+  const effectiveDuration = endOffset !== undefined ? Math.max(0, endOffset - startOffset) : Math.max(0, duration - startOffset);
+
+  if (startOffset > 0) {
+    cmd = cmd.seekInput(startOffset);
+  }
+
+  if (effectiveDuration > 0 && (startOffset > 0 || endOffset !== undefined)) {
+    cmd = cmd.duration(effectiveDuration);
+  }
 
   // ── Video settings ──────────────────────────────────────────────────────────
-  if (preset.videoCodec) {
-    cmd = cmd.videoCodec(preset.videoCodec);
+  if (encoderCodec) {
+    cmd = cmd.videoCodec(encoderCodec);
 
-    if (preset.crf !== undefined && preset.videoCodec !== 'gif') {
+    if (preset.crf !== undefined && encoderCodec !== 'gif') {
       cmd = cmd.outputOptions([`-crf ${preset.crf}`]);
     }
 
@@ -229,7 +270,7 @@ export function encodeFile(
     if (preset.audioBitrate) cmd = cmd.audioBitrate(preset.audioBitrate);
     if (preset.audioSampleRate) cmd = cmd.audioFrequency(preset.audioSampleRate);
     if (preset.audioChannels) cmd = cmd.audioChannels(preset.audioChannels);
-  } else if (!preset.videoCodec) {
+  } else if (!encoderCodec) {
     cmd = cmd.noAudio();
   }
 
@@ -251,18 +292,20 @@ export function encodeFile(
   // ── Progress ────────────────────────────────────────────────────────────────
   const startTime = Date.now();
   cmd.on('progress', (progress) => {
+    const trackDuration = effectiveDuration > 0 ? effectiveDuration : duration;
+
     // Calculate percent from timemark when percent is unreliable
     let percent = progress.percent ?? 0;
-    if ((percent <= 0 || percent > 100) && progress.timemark && duration > 0) {
+    if ((percent <= 0 || percent > 100) && progress.timemark && trackDuration > 0) {
       const parts = progress.timemark.split(':').map(Number);
       const secs = parts[0] * 3600 + parts[1] * 60 + parts[2];
-      percent = Math.min(100, (secs / duration) * 100);
+      percent = Math.min(100, (secs / trackDuration) * 100);
     }
 
     // Calculate remaining time based on elapsed time and progress rate
     const elapsed = (Date.now() - startTime) / 1000; // seconds
     const remaining =
-      duration > 0 && percent > 0 && elapsed > 0
+      trackDuration > 0 && percent > 0 && elapsed > 0
         ? Math.round(((100 - percent) / percent) * elapsed)
         : 0;
 
@@ -278,7 +321,7 @@ export function encodeFile(
 
   cmd.on('end', () => {
     activeJobs.delete(jobId);
-    callbacks.onComplete({ jobId, outputPath });
+    callbacks.onComplete({ jobId, outputPath, log: stderrLog.trim() || undefined });
   });
 
   cmd.on('error', (err) => {
@@ -297,6 +340,7 @@ export function encodeFile(
       jobId,
       error: err.message,
       details: extraDetails || undefined,
+      log: stderrLog.trim() || undefined,
     });
   });
 

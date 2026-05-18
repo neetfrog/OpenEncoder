@@ -45,11 +45,25 @@ export function validateEncodeStartPayload(payload: unknown): boolean {
   return p.jobs.every((job: unknown) => {
     if (typeof job !== 'object' || !job) return false;
     const j = job as Record<string, unknown>;
+    const trimStartValid = j.trimStart === undefined || typeof j.trimStart === 'number';
+    const trimEndValid = j.trimEnd === undefined || typeof j.trimEnd === 'number';
+    const outputDirValid = j.outputDir === undefined || typeof j.outputDir === 'string';
+    const hwAccelValid =
+      j.hwAccel === undefined ||
+      j.hwAccel === 'auto' ||
+      j.hwAccel === 'none' ||
+      j.hwAccel === 'nvenc' ||
+      j.hwAccel === 'qsv' ||
+      j.hwAccel === 'amf';
+
     return (
       typeof j.id === 'string' &&
       typeof j.inputPath === 'string' &&
-      typeof j.outputDir === 'string' &&
-      typeof j.preset === 'object'
+      outputDirValid &&
+      typeof j.preset === 'object' &&
+      trimStartValid &&
+      trimEndValid &&
+      hwAccelValid
     );
   });
 }

@@ -16,6 +16,7 @@ export default function QueuePanel(): JSX.Element {
     setIsEncoding,
     setOutputDir,
     outputDir,
+    hwAccel,
   } = useEncoderStore();
 
   const handleAddFiles = useCallback(async () => {
@@ -39,9 +40,12 @@ export default function QueuePanel(): JSX.Element {
         inputPath: j.inputPath,
         outputDir: j.outputDir || outputDir,
         preset: j.preset,
-      })),
+        trimStart: j.trimStart,
+        trimEnd: j.trimEnd,
+        hwAccel: j.preset.hwAccel ?? hwAccel,
+      }))
     });
-  }, [jobs, outputDir, setIsEncoding]);
+  }, [jobs, outputDir, hwAccel, setIsEncoding]);
 
   const handleCancelAll = useCallback(async () => {
     await window.api.encodeCancelAll();

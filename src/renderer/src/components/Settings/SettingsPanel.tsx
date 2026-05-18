@@ -3,7 +3,7 @@ import { FolderOpen, Cpu, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { useEncoderStore } from '@renderer/store/useEncoderStore';
 
 export default function SettingsPanel(): JSX.Element {
-  const { outputDir, setOutputDir, concurrentJobs, setConcurrentJobs } = useEncoderStore();
+  const { outputDir, setOutputDir, concurrentJobs, setConcurrentJobs, hwAccel, setHwAccel } = useEncoderStore();
   const [appVersion, setAppVersion] = useState('');
   const [platform, setPlatform] = useState('');
   const [showAbout, setShowAbout] = useState(false);
@@ -101,6 +101,40 @@ export default function SettingsPanel(): JSX.Element {
                         ? 'Parallel (high CPU)'
                         : ''}
                 </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Hardware Acceleration Section */}
+        <section>
+          <h3 className="text-xs font-semibold text-[#8b949e] uppercase tracking-widest mb-3">
+            Hardware acceleration
+          </h3>
+
+          <div className="space-y-4 bg-[#161b22] rounded-xl border border-[#21262d] p-4">
+            <div>
+              <label className="block text-sm font-medium text-[#e6edf3] mb-1.5">
+                Preferred backend
+              </label>
+              <p className="text-xs text-[#8b949e] mb-3">
+                Use a supported hardware encoder if available. Leave on auto to keep software compatibility.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(['auto', 'none', 'nvenc', 'qsv', 'amf'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setHwAccel(mode)}
+                    className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors border
+                      ${
+                        hwAccel === mode
+                          ? 'border-indigo-500 bg-indigo-500/20 text-indigo-300'
+                          : 'border-[#30363d] bg-[#21262d] text-[#8b949e] hover:border-[#484f58] hover:text-[#e6edf3]'
+                      }`}
+                  >
+                    {mode.toUpperCase()}
+                  </button>
+                ))}
               </div>
             </div>
           </div>

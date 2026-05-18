@@ -87,7 +87,7 @@ async function generateThumbnail(filePath: string): Promise<string | undefined> 
     return pathToFileURL(filePath).href;
   }
 
-  const fileName = `mediaforge-thumb-${randomUUID()}.png`;
+  const fileName = `openencoder-thumb-${randomUUID()}.png`;
   const outputPath = join(tmpdir(), fileName);
 
   return new Promise((resolve) => {

@@ -160,7 +160,7 @@ export default function SettingsPanel(): JSX.Element {
                   <Cpu size={20} className="text-white" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-[#e6edf3]">MediaForge</div>
+                  <div className="text-sm font-semibold text-[#e6edf3]">OpenEncoder</div>
                   <div className="text-xs text-[#8b949e]">
                     v{appVersion || '0.1.0'} · Open Source
                   </div>

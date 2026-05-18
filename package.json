@@ -1,5 +1,5 @@
 {
-  "name": "mediaforge",
+  "name": "openencoder",
   "version": "0.1.0",
   "description": "Open-source Adobe Media Encoder replacement powered by FFmpeg",
   "main": "./out/main/index.js",
@@ -59,8 +59,8 @@
     "ts-jest": "^29.1.1"
   },
   "build": {
-    "appId": "com.mediaforge.app",
-    "productName": "MediaForge",
+    "appId": "com.openencoder.app",
+    "productName": "OpenEncoder",
     "directories": {
       "output": "dist-electron"
     },
@@ -93,7 +93,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "MediaForge"
+      "shortcutName": "OpenEncoder"
     },
     "mac": {
       "target": "dmg",

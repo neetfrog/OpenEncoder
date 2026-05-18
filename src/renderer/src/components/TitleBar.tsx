@@ -20,7 +20,7 @@ export default function TitleBar(): JSX.Element {
         <div className="w-6 h-6 rounded bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
           <Cpu size={13} className="text-white" />
         </div>
-        <span className="text-sm font-semibold text-[#e6edf3] tracking-tight">MediaForge</span>
+        <span className="text-sm font-semibold text-[#e6edf3] tracking-tight">OpenEncoder</span>
         {isEncoding && (
           <span className="no-drag flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse inline-block" />

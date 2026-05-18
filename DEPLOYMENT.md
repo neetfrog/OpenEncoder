@@ -31,19 +31,19 @@ npm run build
 #### Windows
 ```bash
 npm run dist:win
-# Test installer: dist-electron/MediaForge-setup-*.exe
+# Test installer: dist-electron/OpenEncoder-setup-*.exe
 ```
 
 #### macOS
 ```bash
 npm run dist:mac
-# Test DMG: dist-electron/MediaForge-*.dmg
+# Test DMG: dist-electron/OpenEncoder-*.dmg
 ```
 
 #### Linux
 ```bash
 npm run dist:linux
-# Test AppImage: dist-electron/MediaForge-*.AppImage
+# Test AppImage: dist-electron/OpenEncoder-*.AppImage
 ```
 
 ### 5. Code Signing (Optional)
@@ -82,7 +82,7 @@ The workflow will automatically:
    - Create GitHub release with all artifacts
    - Generate release notes
 
-3. Verify release at: `https://github.com/user/mediaforge/releases`
+3. Verify release at: `https://github.com/user/openencoder/releases`
 
 4. For detailed troubleshooting and advanced options, see [RELEASE.md](RELEASE.md)
 
@@ -106,7 +106,7 @@ The workflow will automatically:
 ## Troubleshooting Deployment
 
 ### App Won't Start
-- Check logs in `~/.config/mediaforge/` (Linux) or `%APPDATA%\mediaforge\` (Windows)
+- Check logs in `~/.config/openencoder/` (Linux) or `%APPDATA%\openencoder\` (Windows)
 - Verify FFmpeg binaries are present in bundle
 - Test on clean system without dev environment
 

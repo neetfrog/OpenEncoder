@@ -61,7 +61,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.mediaforge.app');
+  electronApp.setAppUserModelId('com.openencoder.app');
   setupErrorHandling();
 
   app.on('browser-window-created', (_, window) => {

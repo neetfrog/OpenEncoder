@@ -1,4 +1,4 @@
-# MediaForge
+# OpenEncoder
 
 **Open-source Adobe Media Encoder replacement** powered by FFmpeg.
 
@@ -25,13 +25,13 @@ A full-featured local video/audio transcoder with a modern dark UI. No subscript
 
 ### Installation
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/user/mediaforge/releases):
+Download the latest release for your platform from [GitHub Releases](https://github.com/user/openencoder/releases):
 
 - **Windows**:
-  - `MediaForge-setup-*.exe` — Installer (recommended for most users)
-  - `MediaForge-*.exe` — Portable executable (no installation required)
-- **macOS**: `MediaForge-*.dmg` — DMG installer (Universal binary: Intel + Apple Silicon)
-- **Linux**: `MediaForge-*.AppImage` — AppImage (self-contained, no dependencies)
+  - `OpenEncoder-setup-*.exe` — Installer (recommended for most users)
+  - `OpenEncoder-*.exe` — Portable executable (no installation required)
+- **macOS**: `OpenEncoder-*.dmg` — DMG installer (Universal binary: Intel + Apple Silicon)
+- **Linux**: `OpenEncoder-*.AppImage` — AppImage (self-contained, no dependencies)
 
 ### Usage
 
@@ -185,7 +185,7 @@ The preset will automatically appear in the queue dropdown and Presets browser.
 - Try reducing concurrent jobs in settings
 - Close other resource-intensive applications
 
-### macOS: "MediaForge is damaged" or notarization warning
+### macOS: "OpenEncoder is damaged" or notarization warning
 - Right-click the app → "Open" → "Open" (one-time bypass)
 - This is a known macOS security feature; normal for unsigned apps during beta
 

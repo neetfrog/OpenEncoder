@@ -1,5 +1,5 @@
 #!/bin/bash
-# MediaForge Release Script
+# OpenEncoder Release Script
 # Usage: ./scripts/release.sh 0.2.0
 
 set -e
@@ -75,7 +75,7 @@ echo "   2. Build installers for Windows, macOS, Linux"
 echo "   3. Create GitHub release with artifacts"
 echo ""
 echo "👉 Monitor progress at:"
-echo "   https://github.com/user/mediaforge/actions"
+echo "   https://github.com/user/openencoder/actions"
 echo ""
 echo "📦 Release will be available at:"
-echo "   https://github.com/user/mediaforge/releases/tag/$TAG"
+echo "   https://github.com/user/openencoder/releases/tag/$TAG"

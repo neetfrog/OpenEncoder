@@ -2,16 +2,16 @@
 
 ## Automated Release Process
 
-MediaForge uses GitHub Actions to automatically build and release the application across Windows, macOS, and Linux.
+OpenEncoder uses GitHub Actions to automatically build and release the application across Windows, macOS, and Linux.
 
 ### How It Works
 
 1. Push a semantic version tag to trigger the workflow
 2. Tests run automatically
 3. Builds are created for all platforms:
-   - **Windows**: NSIS installer (`MediaForge-setup-*.exe`) + Portable executable (`MediaForge-*.exe`)
-   - **macOS**: DMG installer (`MediaForge-*.dmg`)
-   - **Linux**: AppImage (`MediaForge-*.AppImage`)
+   - **Windows**: NSIS installer (`OpenEncoder-setup-*.exe`) + Portable executable (`OpenEncoder-*.exe`)
+   - **macOS**: DMG installer (`OpenEncoder-*.dmg`)
+   - **Linux**: AppImage (`OpenEncoder-*.AppImage`)
 4. GitHub release is automatically created with all artifacts
 
 ### Creating a Release
@@ -97,24 +97,24 @@ The scripts perform pre-flight checks and automatically update package.json.
 ### What Gets Built
 
 #### Windows
-- **Installer** (`MediaForge-setup-0.2.0.exe`)
+- **Installer** (`OpenEncoder-setup-0.2.0.exe`)
   - One-click installer with shortcuts
   - Optional installation directory selection
   - Start menu & desktop shortcuts
   
-- **Portable** (`MediaForge-0.2.0.exe`)
+- **Portable** (`OpenEncoder-0.2.0.exe`)
   - No installation required
   - Can run from USB drive
   - Stores config in app directory
 
 #### macOS
-- **DMG** (`MediaForge-0.2.0.dmg`)
+- **DMG** (`OpenEncoder-0.2.0.dmg`)
   - Universal binary (Intel + Apple Silicon)
   - Signed and ready to run
   - Standard macOS installation experience
 
 #### Linux
-- **AppImage** (`MediaForge-0.2.0.AppImage`)
+- **AppImage** (`OpenEncoder-0.2.0.AppImage`)
   - Self-contained, portable executable
   - No dependencies required
   - Works on all modern Linux distributions

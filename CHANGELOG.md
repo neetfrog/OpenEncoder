@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to MediaForge will be documented in this file.
+All notable changes to OpenEncoder will be documented in this file.
 
 ## [0.2.0] - Unreleased
 

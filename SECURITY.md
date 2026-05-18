@@ -1,6 +1,6 @@
 # Production Security Checklist
 
-This document outlines security considerations and implementation status for MediaForge in production.
+This document outlines security considerations and implementation status for OpenEncoder in production.
 
 ## Implementation Status
 

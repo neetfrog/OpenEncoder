@@ -4,6 +4,8 @@
 
 A full-featured local video/audio transcoder with a modern dark UI. No subscriptions, no watermarks, no cloud dependency.
 
+![OpenEncoder screenshot](public/screenshot.png)
+
 ---
 
 ## ✨ Features
